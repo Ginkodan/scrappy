@@ -240,18 +240,18 @@ class DashboardStore {
       case 'update_row': {
         const provider = payload.provider as string;
         const changed = payload.changed as boolean;
-        const newRate = payload.newRate as string;
+        const newValue = payload.newValue as string;
         s.updateRows = [{
           provider,
           url: payload.url as string | undefined,
-          oldRate: payload.oldRate as string,
-          newRate,
+          oldValue: payload.oldValue as string,
+          newValue,
           changed,
           ts: time,
         }, ...s.updateRows];
         s.updateDone = s.updateDone + 1;
         this.currentAction = changed
-          ? `✓ ${provider}\nrate updated → ${newRate}`
+          ? `✓ ${provider}\nupdated → ${newValue}`
           : `✓ ${provider}\nno change`;
         break;
       }

@@ -49,8 +49,8 @@ export interface ErrorEntry {
 export interface UpdateRow {
   provider: string;
   url?: string;
-  oldRate: string;
-  newRate: string;
+  oldValue: string;
+  newValue: string;
   changed: boolean;
   ts: string;
 }

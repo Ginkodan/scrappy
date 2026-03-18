@@ -179,7 +179,7 @@
       </div>
     </div>
 
-    <label>Rate fields <span style="font-weight:normal;color:#555">(comma-separated)</span></label>
+    <label>Tracked fields <span style="font-weight:normal;color:#555">(comma-separated)</span></label>
     <input type="text" bind:value={rateFields} placeholder="preis" style="margin-bottom:0.75rem" />
 
     <label>Naming rules <span style="font-weight:normal;color:#555">(one per line, guides LLM on name normalisation)</span></label>

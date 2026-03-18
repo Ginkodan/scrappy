@@ -220,10 +220,10 @@ ${markdown}`,
           patch[urlField] = url;
           patch._dataSource = "official";
           patch._lastUpdated = new Date().toISOString().split("T")[0];
-          const oldRate = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
-          const newRate = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
+          const oldValue = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
+          const newValue = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
           const changed = schemaDef.rateFields.some((f) => !rateNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
-          log("update_row", { provider: providerName, url, oldRate, newRate, changed });
+          log("update_row", { provider: providerName, url, oldValue, newValue, changed });
           const { updated: u } = await updateRecords([patch], dataset, schemaDef, db);
           updates += u;
           return true;
@@ -346,10 +346,10 @@ ${markdown}`,
     patch._dataSource = "official";
     patch._lastUpdated = new Date().toISOString().split("T")[0];
 
-    const oldRate = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
-    const newRate = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
+    const oldValue = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
+    const newValue = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
     const changed = schemaDef.rateFields.some((f) => !rateNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
-    log("update_row", { provider: providerName, url, oldRate, newRate, changed });
+    log("update_row", { provider: providerName, url, oldValue, newValue, changed });
 
     const { updated: u } = await updateRecords([patch], dataset, schemaDef, db);
     updates += u;

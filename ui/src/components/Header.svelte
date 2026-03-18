@@ -40,7 +40,7 @@
     {/if}
   </div>
   <div style="display:flex;align-items:center;gap:1rem">
-    <a class="docs-link" href="#" title="Documentation">docs</a>
+    <a class="docs-link" href={`${window.location.protocol}//docs.${window.location.hostname}`} target="_blank" rel="noopener" title="Documentation">docs</a>
     <button class="gear-btn" title="Settings" onclick={onOpenSettings}>⚙</button>
   </div>
 </div>

@@ -19,7 +19,7 @@ export function formatEvent(type: string, p: Record<string, unknown>): string | 
     case 'error':        return `[error] ${p.tool}: ${p.message}`;
     case 'agent':        return `[agent] ${p.message}`;
     case 'update_start': return `[update] ${p.total} rows to verify`;
-    case 'update_row':   return `  ✓ ${p.provider}: ${p.oldRate} → ${p.newRate}${p.changed ? ' (CHANGED)' : ''}`;
+    case 'update_row':   return `  ✓ ${p.provider}: ${p.oldValue} → ${p.newValue}${p.changed ? ' (CHANGED)' : ''}`;
     case 'log':          return (p.message as string) ?? null;
     case 'iter_state':   return null;
     default:             return null;

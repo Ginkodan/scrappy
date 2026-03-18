@@ -57,12 +57,12 @@
     </div>
 
     {#if s.updateRows.filter(r => r.changed).length > 0}
-      <DashPanel title="Rate Changes" count={s.updateRows.filter(r => r.changed).length}>
+      <DashPanel title="Changes" count={s.updateRows.filter(r => r.changed).length}>
         {#each s.updateRows.filter(r => r.changed) as r}
           <div class="p-row" style="flex-direction:column;align-items:flex-start;gap:0.1rem;padding:0.25rem 0">
             <span style="color:#ccc;font-size:0.7rem;font-weight:600">{r.provider}</span>
             <span style="color:#888;font-size:0.65rem;word-break:break-all">
-              {r.oldRate} → <span style="color:#4caf50">{r.newRate}</span>
+              {r.oldValue} → <span style="color:#4caf50">{r.newValue}</span>
             </span>
           </div>
         {/each}

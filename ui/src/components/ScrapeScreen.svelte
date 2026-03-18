@@ -87,7 +87,7 @@
     >+ Index</button>
     <button
       class="action-btn" class:active={activePanel === 'update'}
-      onclick={() => togglePanel('update')} title="Update rates"
+      onclick={() => togglePanel('update')} title="Update data"
     >↻ Update</button>
     <button
       class="action-btn" class:active={activePanel === 'schemas'}
