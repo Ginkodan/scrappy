@@ -11,6 +11,10 @@ export interface Settings {
   openaiExtractModel: string;
   zordmindUrl: string;
   zordmindModel: string;
+  crawl4aiBase: string;
+  apiKey: string;
+  allowedOrigins: string;
+  webhookUrl: string;
 }
 
 const DEFAULTS: Settings = {
@@ -21,6 +25,10 @@ const DEFAULTS: Settings = {
   openaiExtractModel: "gpt-5.4-mini",
   zordmindUrl: "https://inference.kube.megazord.studio",
   zordmindModel: "qwen3-32b",
+  crawl4aiBase: process.env.CRAWL4AI_BASE ?? "https://crawl.naszilla.ch",
+  apiKey: "",
+  allowedOrigins: "",
+  webhookUrl: "",
 };
 
 export function readSettings(): Settings {

@@ -304,11 +304,11 @@ export async function runAgent(
                 log("scrape_start", { url, depth });
                 const result = await scrapeUrl(url, crawl4aiBase);
                 for (const link of result.links) {
-                  if (!urlDepth.has(link)) urlDepth.set(link, depth + 1);
+                  if (!urlDepth.has(link.url)) urlDepth.set(link.url, depth + 1);
                 }
                 resultContent = JSON.stringify({
                   markdown: result.markdown.slice(0, 15000),
-                  links: result.links.slice(0, 150),
+                  links: result.links.slice(0, 150).map(l => l.url),
                 });
                 log("scrape_done", { url, depth, chars: result.markdown.length, links: result.links.length });
               }

@@ -8,7 +8,6 @@ import { readSettings } from "./settings.js";
 import { createAnthropicClient, createOpenAIClient, createZordMindClient } from "../agent/llm-client.js";
 import { dbListSchemas, dbGetSchema } from "./schema-store.js";
 
-const CRAWL4AI_BASE = process.env.CRAWL4AI_BASE ?? "https://crawl.naszilla.ch";
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 const OPENAI_API_KEY = process.env.OPENAI_KEY ?? "";
 const SERPAPI_KEY = process.env.SERPAPI_KEY ?? "";
@@ -66,7 +65,7 @@ export async function runIndexJob(job: Job): Promise<void> {
       totalSkipped += skipped;
     };
 
-    await runAgent(config, makeLLMClient(), SERPAPI_KEY, CRAWL4AI_BASE, onRecords, emit, job.abortController.signal);
+    await runAgent(config, makeLLMClient(), SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
     if (job.abortController.signal.aborted) {
       finishJob(job, "cancelled", "Cancelled by user");
     } else {
@@ -85,7 +84,7 @@ export async function runUpdateJob(job: Job): Promise<void> {
     const schemaDef = loadSchema(schema);
     const dataset = input.replace(/\.csv$/i, "");
 
-    await runUpdate(dataset, schemaDef, makeLLMClient(), CRAWL4AI_BASE, {
+    await runUpdate(dataset, schemaDef, makeLLMClient(), readSettings().crawl4aiBase, {
       signal: job.abortController.signal,
       filter: job.params.filter,
       serpApiKey: SERPAPI_KEY,

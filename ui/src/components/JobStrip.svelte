@@ -67,7 +67,7 @@
   }
   .strip-empty {
     font-size: 0.72rem;
-    color: #333;
+    color: #666;
     font-family: monospace;
   }
   .strip-job {
@@ -94,14 +94,14 @@
     text-overflow: ellipsis;
   }
   .strip-age {
-    color: #333;
+    color: #555;
     font-size: 0.65rem;
     font-family: monospace;
     white-space: nowrap;
   }
   .cancel-btn {
     all: unset;
-    color: #444;
+    color: #666;
     font-size: 0.9rem;
     cursor: pointer;
     line-height: 1;
@@ -112,9 +112,9 @@
     all: unset;
     cursor: pointer;
     font-size: 0.65rem;
-    color: #555;
+    color: #777;
     background: #1a1a1a;
-    border: 1px solid #2a2a2a;
+    border: 1px solid #333;
     border-radius: 3px;
     padding: 0.15rem 0.5rem;
     white-space: nowrap;

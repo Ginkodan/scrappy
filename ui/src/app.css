@@ -14,7 +14,7 @@ body {
 }
 .app-header h1 { font-size: 1.2rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
 .gear-btn {
-  all: unset; cursor: pointer; color: #444; font-size: 1.1rem; line-height: 1;
+  all: unset; cursor: pointer; color: #666; font-size: 1.1rem; line-height: 1;
   transition: color 0.15s;
 }
 .gear-btn:hover { color: #aaa; }
@@ -36,7 +36,7 @@ body {
 }
 .modal-close {
   all: unset; position: absolute; top: 0.9rem; right: 1rem;
-  cursor: pointer; color: #444; font-size: 1rem; line-height: 1;
+  cursor: pointer; color: #666; font-size: 1rem; line-height: 1;
 }
 .modal-close:hover { color: #aaa; }
 
@@ -56,7 +56,7 @@ body {
   padding: 0.4rem 0.85rem;
   font-size: 0.8rem;
   cursor: pointer;
-  color: #555;
+  color: #777;
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
 }
@@ -65,8 +65,8 @@ body {
 .panel { display: none; }
 .panel.active { display: block; }
 
-label { display: block; font-size: 0.75rem; color: #666; margin-bottom: 0.3rem; }
-label span { color: #3a3a3a; }
+label { display: block; font-size: 0.75rem; color: #888; margin-bottom: 0.3rem; }
+label span { color: #666; }
 
 input, select {
   width: 100%;
@@ -93,7 +93,7 @@ button {
   cursor: pointer;
 }
 button:hover { background: #00acc1; }
-button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
+button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 
 /* Job list */
 .section-title {
@@ -135,15 +135,15 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
 .badge.cancelled { background: #2a2a1a; color: #ffb74d; }
 .badge.pass      { background: #0a2a0a; color: #4caf50; }
 
-.job-meta { font-size: 0.68rem; color: #444; font-family: monospace; }
+.job-meta { font-size: 0.68rem; color: #666; font-family: monospace; }
 
 .cancel-btn {
-  width: auto; background: none; border: none; color: #444;
+  width: auto; background: none; border: none; color: #666;
   font-size: 1rem; padding: 0 0.2rem; cursor: pointer; line-height: 1; flex-shrink: 0;
 }
 .cancel-btn:hover { color: #f44336; }
 
-.empty { color: #333; font-size: 0.78rem; padding: 0.5rem 0; font-family: monospace; }
+.empty { color: #666; font-size: 0.78rem; padding: 0.5rem 0; font-family: monospace; }
 
 .spinner {
   display: inline-block; width: 7px; height: 7px;
@@ -158,7 +158,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
 
 .dash-empty {
   display: flex; align-items: center; justify-content: center;
-  height: 400px; color: #2a2a2a; font-family: monospace; font-size: 0.85rem;
+  height: 400px; color: #666; font-family: monospace; font-size: 0.85rem;
   border: 1px solid #1a1a1a; border-radius: 6px;
 }
 
@@ -178,7 +178,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
   display: flex; gap: 1.5rem; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.75rem;
 }
 .stat { display: flex; flex-direction: column; gap: 0.15rem; }
-.stat-label { color: #444; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.stat-label { color: #666; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.06em; }
 .stat-value { color: #ccc; }
 .stat-value.teal   { color: #00bcd4; }
 .stat-value.amber  { color: #ffb74d; }
@@ -209,7 +209,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
   letter-spacing: 0.1em; color: #00bcd4;
 }
 .dash-panel-count {
-  font-size: 0.65rem; font-family: monospace; color: #444;
+  font-size: 0.65rem; font-family: monospace; color: #666;
 }
 .dash-panel-body {
   padding: 0.5rem 0.75rem;
@@ -225,14 +225,14 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
   border-bottom: 1px solid #242424;
   margin-bottom: 0.1rem;
   font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.07em; color: #333;
+  letter-spacing: 0.07em; color: #555;
 }
 .p-header .p-indicator { visibility: hidden; }
 .p-row { display: flex; align-items: baseline; gap: 0.5rem; padding: 0.1rem 0; border-bottom: 1px solid #1a1a1a; }
 .p-row:last-child { border-bottom: none; }
 .p-indicator { flex-shrink: 0; font-size: 0.7rem; width: 1.2rem; text-align: center; }
 .p-main { color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
-.p-meta { flex-shrink: 0; color: #3a3a3a; font-size: 0.65rem; }
+.p-meta { flex-shrink: 0; color: #666; font-size: 0.65rem; }
 
 .p-indicator.active  { color: #ffb74d; }
 .p-indicator.done    { color: #4caf50; }
@@ -252,7 +252,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
 }
 .raw-log-header:hover { background: #1a1a1a; border-radius: 6px; }
 .raw-log-toggle { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #00bcd4; }
-.raw-log-chevron { color: #444; font-size: 0.75rem; transition: transform 0.15s; }
+.raw-log-chevron { color: #666; font-size: 0.75rem; transition: transform 0.15s; }
 .raw-log-chevron.open { transform: rotate(90deg); }
 .raw-log-body {
   border-top: 1px solid #1e1e1e;
@@ -260,11 +260,11 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
   max-height: 220px; overflow-y: auto; overflow-x: hidden;
   font-family: "SF Mono", "Fira Code", monospace; font-size: 0.7rem; line-height: 1.6;
 }
-.log-line { white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; color: #555; }
+.log-line { white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; color: #777; }
 .log-line.search   { color: #4f8ef7; }
 .log-line.scrape   { color: #9c7ef7; }
 .log-line.extract  { color: #4caf50; }
-.log-line.agent    { color: #444; font-style: italic; }
+.log-line.agent    { color: #666; font-style: italic; }
 .log-line.error    { color: #f44336; }
 .log-line.finish   { color: #ffb74d; font-weight: 600; }
 
@@ -276,7 +276,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
 .rpanel-tabs { display: flex; gap: 0; border-bottom: 1px solid #1e1e1e; margin-bottom: 0.75rem; }
 .rpanel-tab {
   padding: 0.4rem 0.9rem; font-size: 0.75rem; cursor: pointer;
-  color: #444; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  color: #666; border-bottom: 2px solid transparent; margin-bottom: -1px;
 }
 .rpanel-tab.active { color: #fff; border-bottom-color: #00bcd4; }
 
@@ -316,7 +316,7 @@ button:disabled { background: #1e1e1e; color: #444; cursor: not-allowed; }
 }
 .test-case-name { font-size: 0.8rem; font-weight: 600; color: #ddd; }
 .test-case-topic {
-  font-size: 0.68rem; color: #444; font-family: monospace;
+  font-size: 0.68rem; color: #666; font-family: monospace;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   margin-bottom: 0.35rem;
 }

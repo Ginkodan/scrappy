@@ -92,6 +92,46 @@ export function readRecords(dataset: string, db: Database.Database): CsvRow[] {
     .map(rowToCsvRow);
 }
 
+export interface PaginatedOptions {
+  limit?: number;
+  offset?: number;
+  sort?: string;
+  order?: "asc" | "desc";
+  filter?: Record<string, string>;
+}
+
+export function readRecordsPaginated(
+  dataset: string,
+  db: Database.Database,
+  opts: PaginatedOptions = {}
+): { rows: CsvRow[]; total: number } {
+  const limit = Math.min(opts.limit ?? 100, 1000);
+  const offset = opts.offset ?? 0;
+  const order = opts.order === "desc" ? "DESC" : "ASC";
+
+  const filterEntries = Object.entries(opts.filter ?? {});
+  const filterSql = filterEntries
+    .map(([k]) => `json_extract(data, '$.${k}') = ?`)
+    .join(" AND ");
+  const where = filterSql ? `dataset = ? AND ${filterSql}` : `dataset = ?`;
+  const filterValues = filterEntries.map(([, v]) => v);
+
+  const orderSql = opts.sort
+    ? `json_extract(data, '$.${opts.sort}') ${order}`
+    : `id ${order}`;
+
+  const rows = (db
+    .prepare(`SELECT * FROM records WHERE ${where} ORDER BY ${orderSql} LIMIT ? OFFSET ?`)
+    .all(dataset, ...filterValues, limit, offset) as DbRow[])
+    .map(rowToCsvRow);
+
+  const { count } = db
+    .prepare(`SELECT COUNT(*) as count FROM records WHERE ${where}`)
+    .get(dataset, ...filterValues) as { count: number };
+
+  return { rows, total: count };
+}
+
 export async function appendRecords(
   records: CsvRow[],
   dataset: string,
@@ -170,6 +210,24 @@ export function listDatasets(db: Database.Database): string[] {
 
 export function deleteDataset(name: string, db: Database.Database): void {
   db.prepare("DELETE FROM records WHERE dataset = ?").run(name);
+}
+
+export function markNotDuplicate(ids: number[], db: Database.Database): void {
+  const rows = ids
+    .map(id => db.prepare("SELECT id, data FROM records WHERE id = ?").get(id) as { id: number; data: string } | undefined)
+    .filter((r): r is { id: number; data: string } => r !== null && r !== undefined);
+
+  const update = db.prepare("UPDATE records SET data = ? WHERE id = ?");
+  db.transaction(() => {
+    for (const row of rows) {
+      const data = JSON.parse(row.data) as Record<string, unknown>;
+      const otherIds = ids.filter(id => id !== row.id);
+      const existing = String(data._noDedup ?? "").split(",").filter(Boolean).map(Number);
+      const merged = [...new Set([...existing, ...otherIds])].join(",");
+      data._noDedup = merged;
+      update.run(JSON.stringify(data), row.id);
+    }
+  })();
 }
 
 export function deleteRecordsByIds(ids: number[], db: Database.Database): void {

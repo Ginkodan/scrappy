@@ -5,7 +5,7 @@
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
   import { jobsStore } from './stores/jobs.svelte';
-  import { getSchemas, getOutputs } from './lib/api';
+  import { getSchemas, getOutputs, getSettings } from './lib/api';
 
   let screen = $state<'monitor' | 'scrape'>('monitor');
   let settingsOpen = $state(false);
@@ -22,6 +22,7 @@
   }
 
   $effect(() => {
+    getSettings(); // loads api key into module-level store
     loadSelects();
     jobsStore.refresh();
 

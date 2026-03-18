@@ -26,7 +26,7 @@ export interface RunConfig {
 export interface ScrapeResult {
   url: string;
   markdown: string;
-  links: string[];
+  links: Array<{ url: string; text: string }>;
 }
 
 export type ExtractedRecord = Record<string, unknown>;

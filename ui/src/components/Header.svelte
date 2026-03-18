@@ -1,5 +1,6 @@
 <script lang="ts">
   import { jobsStore } from '../stores/jobs.svelte';
+  import BotIcon from './BotIcon.svelte';
 
   const {
     screen,
@@ -23,7 +24,10 @@
 
 <div class="app-header">
   <div style="display:flex;align-items:center;gap:1.5rem">
-    <h1>scrappy</h1>
+    <div class="brand">
+      <BotIcon size={18} color="#00bcd4" strokeWidth={1.75} />
+      <h1>scrappy</h1>
+    </div>
     <nav class="app-nav">
       <button class="nav-link" class:active={screen === 'monitor'} onclick={() => onScreenChange('monitor')}>Monitor</button>
       <button class="nav-link" class:active={screen === 'scrape'} onclick={() => onScreenChange('scrape')}>Scrape</button>
@@ -35,10 +39,28 @@
       </div>
     {/if}
   </div>
-  <button class="gear-btn" title="Settings" onclick={onOpenSettings}>⚙</button>
+  <div style="display:flex;align-items:center;gap:1rem">
+    <a class="docs-link" href="#" title="Documentation">docs</a>
+    <button class="gear-btn" title="Settings" onclick={onOpenSettings}>⚙</button>
+  </div>
 </div>
 
 <style>
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  .docs-link {
+    font-size: 0.8rem;
+    color: #aaa;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    font-family: monospace;
+    transition: color 0.15s;
+  }
+  .docs-link:hover { color: #fff; }
+
   .app-nav {
     display: flex;
     gap: 0.1rem;
@@ -48,7 +70,7 @@
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 500;
-    color: #555;
+    color: #888;
     padding: 0.25rem 0.65rem;
     border-radius: 4px;
     transition: color 0.15s, background 0.15s;

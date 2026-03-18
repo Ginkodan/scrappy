@@ -11,6 +11,11 @@
   let openaiExtractModel = $state('');
   let zordmindUrl = $state('');
   let zordmindModel = $state('');
+  let crawl4aiBase = $state('');
+  let apiKey = $state('');
+  let allowedOrigins = $state('');
+  let webhookUrl = $state('');
+  let copied = $state(false);
   let statusText = $state('');
   let statusColor = $state('#4caf50');
 
@@ -27,6 +32,10 @@
     openaiExtractModel = s.openaiExtractModel ?? 'gpt-5.4-mini';
     zordmindUrl = s.zordmindUrl ?? '';
     zordmindModel = s.zordmindModel ?? '';
+    crawl4aiBase = s.crawl4aiBase ?? '';
+    apiKey = s.apiKey ?? '';
+    allowedOrigins = s.allowedOrigins ?? '';
+    webhookUrl = s.webhookUrl ?? '';
     statusText = '';
   }
 
@@ -39,6 +48,9 @@
       openaiExtractModel: openaiExtractModel.trim(),
       zordmindUrl: zordmindUrl.trim(),
       zordmindModel: zordmindModel.trim(),
+      crawl4aiBase: crawl4aiBase.trim(),
+      allowedOrigins: allowedOrigins.trim(),
+      webhookUrl: webhookUrl.trim(),
     };
     const res = await saveSettings(body);
     if (res.ok) {
@@ -61,6 +73,9 @@
   <div class="modal">
     <div class="modal-title">Settings</div>
     <button class="modal-close" onclick={onClose}>✕</button>
+
+    <label for="crawl4ai-base">Crawl4AI endpoint</label>
+    <input id="crawl4ai-base" type="text" bind:value={crawl4aiBase} placeholder="https://crawl.naszilla.ch" style="margin-bottom:1rem" />
 
     <label>LLM Provider</label>
     <div style="display:flex;gap:1.25rem;margin-bottom:0.75rem;flex-wrap:wrap">
@@ -105,6 +120,22 @@
       <input id="zm-model" type="text" bind:value={zordmindModel} placeholder="qwen3-32b" />
     {/if}
 
+    <div class="section-divider">API / Webflow</div>
+
+    <label>API Key <span class="hint">(required to trigger jobs remotely)</span></label>
+    <div class="api-key-row">
+      <input type="text" value={apiKey} readonly style="flex:1;font-family:monospace;font-size:0.75rem" />
+      <button class="copy-btn" onclick={() => { navigator.clipboard.writeText(apiKey); copied = true; setTimeout(() => copied = false, 1500); }}>
+        {copied ? '✓' : 'Copy'}
+      </button>
+    </div>
+
+    <label for="allowed-origins">Allowed origins <span class="hint">(comma-separated, for CORS)</span></label>
+    <input id="allowed-origins" type="text" bind:value={allowedOrigins} placeholder="https://mysite.webflow.io, https://mysite.com" />
+
+    <label for="webhook-url">Webhook URL <span class="hint">(called when a job finishes)</span></label>
+    <input id="webhook-url" type="text" bind:value={webhookUrl} placeholder="https://hooks.zapier.com/..." />
+
     <button onclick={handleSave}>Save</button>
     {#if statusText}
       <div style="margin-top:0.5rem;font-size:0.8rem;color:{statusColor}">{statusText}</div>
@@ -121,7 +152,32 @@
   }
   .hint {
     font-weight: normal;
-    color: #555;
+    color: #777;
     font-size: 0.75em;
   }
+  .section-divider {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #666;
+    border-top: 1px solid #2a2a2a;
+    padding-top: 0.75rem;
+    margin: 0.75rem 0 0.5rem;
+  }
+  .api-key-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+  .copy-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: #4caf50;
+    border: 1px solid #2a3a2a;
+    border-radius: 3px;
+    padding: 0.2rem 0.5rem;
+    white-space: nowrap;
+  }
+  .copy-btn:hover { color: #fff; border-color: #4caf50; }
 </style>

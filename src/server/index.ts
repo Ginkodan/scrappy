@@ -1,17 +1,54 @@
 import "dotenv/config";
-import Fastify from "fastify";
+import Fastify, { type FastifyRequest, type FastifyReply } from "fastify";
 import staticPlugin from "@fastify/static";
+import cors from "@fastify/cors";
+import { timingSafeEqual, randomBytes } from "crypto";
 import { resolve } from "path";
 import { createJob, getJob, listJobs, getJobEvents, type Job } from "./jobs.js";
 import { dbClearJobs } from "./db.js";
 import { listSchemas, listOutputs, runIndexJob, runUpdateJob } from "./runner.js";
 import { readSettings, writeSettings } from "./settings.js";
 import { db } from "./db.js";
-import { readRecords, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset } from "../tools/records.js";
+import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate } from "../tools/records.js";
 import { dbGetSchemaRow, dbGetSchema, dbInsertSchema, dbUpdateSchema, dbDeleteSchema, type SchemaInput } from "./schema-store.js";
 import { seedSchemasFromFiles } from "./seed-schemas.js";
 
 const app = Fastify({ logger: false });
+
+app.register(cors, {
+  origin: (origin, cb) => {
+    const allowed = readSettings().allowedOrigins
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
+      return cb(null, true);
+    }
+    cb(null, allowed.includes(origin));
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+});
+
+function requireApiKey(req: FastifyRequest, reply: FastifyReply): boolean {
+  const settings = readSettings();
+  if (!settings.apiKey) {
+    reply.code(401).send({ error: "no api key configured" });
+    return false;
+  }
+  const header = String(req.headers["authorization"] ?? "");
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  try {
+    const valid = timingSafeEqual(Buffer.from(token.padEnd(64)), Buffer.from(settings.apiKey.padEnd(64)));
+    if (!valid || token !== settings.apiKey) {
+      reply.code(401).send({ error: "unauthorized" });
+      return false;
+    }
+  } catch {
+    reply.code(401).send({ error: "unauthorized" });
+    return false;
+  }
+  return true;
+}
 
 app.register(staticPlugin, {
   root: resolve("public"),
@@ -19,10 +56,16 @@ app.register(staticPlugin, {
 });
 
 // --- settings ---
-app.get("/settings", async () => readSettings());
-app.post("/settings", async (req, reply) => {
-  const { llmProvider, anthropicAgentModel, anthropicExtractModel, openaiModel, openaiExtractModel, zordmindUrl, zordmindModel } = req.body as Record<string, string>;
+app.get("/settings", async () => {
+  let s = readSettings();
+  if (!s.apiKey) s = writeSettings({ apiKey: randomBytes(32).toString("hex") });
+  return s;
+});
+app.post("/settings", async (req) => {
+  const body = req.body as Record<string, string>;
   const patch: Record<string, string> = {};
+  const { llmProvider, anthropicAgentModel, anthropicExtractModel, openaiModel, openaiExtractModel,
+          zordmindUrl, zordmindModel, crawl4aiBase, allowedOrigins, webhookUrl } = body;
   if (llmProvider === "anthropic" || llmProvider === "openai" || llmProvider === "zordmind") patch.llmProvider = llmProvider;
   if (anthropicAgentModel) patch.anthropicAgentModel = anthropicAgentModel;
   if (anthropicExtractModel) patch.anthropicExtractModel = anthropicExtractModel;
@@ -30,6 +73,9 @@ app.post("/settings", async (req, reply) => {
   if (openaiExtractModel) patch.openaiExtractModel = openaiExtractModel;
   if (zordmindUrl) patch.zordmindUrl = zordmindUrl;
   if (zordmindModel) patch.zordmindModel = zordmindModel;
+  if (crawl4aiBase) patch.crawl4aiBase = crawl4aiBase;
+  if (allowedOrigins !== undefined) patch.allowedOrigins = allowedOrigins;
+  if (webhookUrl !== undefined) patch.webhookUrl = webhookUrl;
   return writeSettings(patch);
 });
 
@@ -78,6 +124,7 @@ app.delete("/schemas/:id", async (req, reply) => {
 
 // --- start index job ---
 app.post("/jobs/index", async (req, reply) => {
+  if (!requireApiKey(req, reply)) return;
   const { topic, schema, output, maxIterations, seedUrls } = req.body as Record<string, string>;
   if (!topic || !schema || !output) {
     return reply.code(400).send({ error: "topic, schema, output required" });
@@ -92,6 +139,7 @@ app.post("/jobs/index", async (req, reply) => {
 
 // --- start update job ---
 app.post("/jobs/update", async (req, reply) => {
+  if (!requireApiKey(req, reply)) return;
   const { input, schema, filter } = req.body as Record<string, string>;
   if (!input || !schema) {
     return reply.code(400).send({ error: "input, schema required" });
@@ -213,6 +261,18 @@ app.post("/outputs/:dataset/dedupe", async (req, reply) => {
   return deduplicateDataset(name, db);
 });
 
+// --- mark rows as not duplicates ---
+app.post("/outputs/:dataset/not-duplicate", async (req, reply) => {
+  const { dataset } = req.params as { dataset: string };
+  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
+  const { ids } = req.body as { ids: number[] };
+  if (!Array.isArray(ids) || ids.length < 2) {
+    return reply.code(400).send({ error: "ids array with at least 2 elements required" });
+  }
+  markNotDuplicate(ids, db);
+  return { ok: true };
+});
+
 // --- merge rows by DB id ---
 app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
@@ -227,15 +287,30 @@ app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
   return { ok: true, kept };
 });
 
-// --- records as JSON ---
+// --- records as JSON (paginated, filterable) ---
 app.get("/outputs/:dataset/records", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
   if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
   const name = dataset.replace(/\.csv$/i, "");
-  const rows = readRecords(name, db);
-  if (rows.length === 0) return { headers: [], rows: [] };
+  const q = req.query as Record<string, string>;
+
+  const filter: Record<string, string> = {};
+  for (const [k, v] of Object.entries(q)) {
+    const m = k.match(/^filter\[(.+)\]$/);
+    if (m) filter[m[1]] = v;
+  }
+
+  const { rows, total } = readRecordsPaginated(name, db, {
+    limit: q.limit ? parseInt(q.limit, 10) : undefined,
+    offset: q.offset ? parseInt(q.offset, 10) : undefined,
+    sort: q.sort,
+    order: q.order === "desc" ? "desc" : "asc",
+    filter,
+  });
+
+  if (total === 0) return { headers: [], rows: [], total: 0, limit: 100, offset: 0 };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
-  return { headers, rows };
+  return { headers, rows, total, limit: q.limit ? parseInt(q.limit, 10) : 100, offset: q.offset ? parseInt(q.offset, 10) : 0 };
 });
 
 await seedSchemasFromFiles(db);

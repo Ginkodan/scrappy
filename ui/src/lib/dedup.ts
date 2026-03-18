@@ -79,6 +79,12 @@ export function rowPairScore(
   return 0;
 }
 
+function getNoDedupIds(row: Record<string, unknown>): Set<number> {
+  return new Set(
+    String(row._noDedup ?? '').split(',').filter(Boolean).map(Number)
+  );
+}
+
 export function buildDupGroups(
   rows: Record<string, unknown>[],
   keyFields: string[],
@@ -92,6 +98,9 @@ export function buildDupGroups(
   }
   for (let i = 0; i < rows.length; i++) {
     for (let j = i + 1; j < rows.length; j++) {
+      const idI = Number(rows[i]._id);
+      const idJ = Number(rows[j]._id);
+      if (getNoDedupIds(rows[i]).has(idJ) || getNoDedupIds(rows[j]).has(idI)) continue;
       if (rowPairScore(rows[i], rows[j], keyFields, rateFields) >= threshold) {
         parent[find(i)] = find(j);
       }

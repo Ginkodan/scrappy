@@ -104,6 +104,10 @@ export interface Settings {
   openaiExtractModel?: string;
   zordmindUrl?: string;
   zordmindModel?: string;
+  crawl4aiBase?: string;
+  apiKey?: string;
+  allowedOrigins?: string;
+  webhookUrl?: string;
 }
 
 export interface RecordsResponse {

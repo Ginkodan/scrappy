@@ -5,6 +5,8 @@ ui/node_modules/
 # Build output
 public/assets/
 ui/dist/
+docs/.vitepress/dist
+docs/.vitepress/cache
 
 # Environment
 .env

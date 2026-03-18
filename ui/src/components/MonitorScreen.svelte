@@ -170,7 +170,7 @@
         </button>
       {/each}
       {#if jobsStore.jobs.length > 5}
-        <div style="font-size:0.65rem;color:#333;padding:0.2rem 0;text-align:center">+{jobsStore.jobs.length - 5} more</div>
+        <div style="font-size:0.65rem;color:#555;padding:0.2rem 0;text-align:center">+{jobsStore.jobs.length - 5} more</div>
       {/if}
       <button class="clear-link" onclick={handleClearJobs}>clear completed</button>
     {/if}
@@ -187,14 +187,14 @@
       <span class="p-meta">Time</span>
     </div>
     {#if s.errors.length === 0}
-      <div class="empty" style="color:#2a2a2a">No errors</div>
+      <div class="empty">No errors</div>
     {:else}
       {#each [...s.errors].reverse() as err}
         <div class="p-row" style="flex-direction:column;align-items:flex-start;gap:0.1rem;padding:0.3rem 0">
           <span style="color:#f44336;font-size:0.7rem;word-break:break-all;overflow-wrap:anywhere">
             {err.tool ? `[${err.tool}] ` : ''}{err.message}
           </span>
-          <span style="color:#333;font-size:0.62rem">{err.ts}</span>
+          <span style="color:#555;font-size:0.62rem">{err.ts}</span>
         </div>
       {/each}
     {/if}
@@ -209,9 +209,9 @@
 <style>
   .action-ticker {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5rem;
-    padding: 0.35rem 0.75rem;
+    padding: 0.45rem 0.75rem;
     margin-bottom: 0.75rem;
     background: #0d1a0d;
     border: 1px solid #1a2e1a;
@@ -223,15 +223,16 @@
     transition: color 0.3s, border-color 0.3s;
   }
   .action-ticker.idle {
-    color: #3a4a3a;
+    color: #556655;
     border-color: #1a1a1a;
   }
   .ticker-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #2a3a2a;
+    background: #4a5a4a;
     flex-shrink: 0;
+    margin-top: 0.3rem;
   }
   .ticker-dot.active {
     background: #4caf50;
@@ -242,9 +243,10 @@
     50% { opacity: 0.3; }
   }
   .ticker-text {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: pre-wrap;
+    word-break: break-word;
+    min-height: 4.2em;
+    line-height: 1.5;
   }
 
   .monitor-grid {
@@ -288,7 +290,7 @@
     all: unset;
     cursor: pointer;
     font-size: 0.62rem;
-    color: #333;
+    color: #555;
     margin-top: 0.35rem;
     display: block;
     transition: color 0.15s;

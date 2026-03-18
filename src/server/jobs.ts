@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
 import { dbInsertJob, dbFinishJob, dbGetJob, dbListJobs, dbInsertEvent, dbGetEvents } from "./db.js";
+import { readSettings } from "./settings.js";
+import { fireWebhook } from "./webhook.js";
 
 export type JobType = "index" | "update";
 export type JobStatus = "running" | "done" | "failed" | "cancelled";
@@ -102,6 +104,19 @@ export function finishJob(job: Job, status: "done" | "failed" | "cancelled", res
     for (const fn of active.subscribers) fn(doneEvent);
     active.subscribers.clear();
     activeJobs.delete(job.id);
+  }
+
+  const { webhookUrl } = readSettings();
+  if (webhookUrl) {
+    fireWebhook(webhookUrl, {
+      event: "job.finished",
+      jobId: job.id,
+      type: job.type,
+      status,
+      result: result ?? null,
+      finishedAt,
+      params: job.params,
+    });
   }
 }
 

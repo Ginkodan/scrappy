@@ -145,7 +145,17 @@ class DashboardStore {
         const newMap = new Map(s.activeScrapes);
         newMap.set(key, { url: key, depth: payload.depth as number | undefined, ts: time });
         s.activeScrapes = newMap;
-        this.currentAction = `scraping: ${key}`;
+        const method = payload.method as string | undefined;
+        const provider = payload.provider as string | undefined;
+        if (method === 'bm25') {
+          this.currentAction = `reading ${provider ?? key}\nfiltering for rate data…`;
+        } else if (method === 'crawl') {
+          this.currentAction = `reading ${provider ?? key}\nfull page crawl — scanning for rates & links…`;
+        } else if (method === 'pdf') {
+          this.currentAction = `reading ${provider ?? key}\nopening linked document…`;
+        } else {
+          this.currentAction = `scraping: ${key}`;
+        }
         break;
       }
       case 'scrape_done': {
@@ -155,7 +165,20 @@ class DashboardStore {
         s.activeScrapes = newMap;
         if (!payload.error) {
           s.completedScrapes = [{ ...payload, ts: time } as { url: string; chars?: number; links?: number; ts: string }, ...s.completedScrapes];
-          this.currentAction = `scraped: ${key} (${payload.chars ?? 0} chars)`;
+          const chars = payload.chars as number ?? 0;
+          const method = payload.method as string | undefined;
+          const provider = payload.provider as string | undefined;
+          if (method === 'bm25') {
+            this.currentAction = chars > 200
+              ? `read ${provider ?? key}\n${chars} chars of filtered content — extracting…`
+              : `read ${provider ?? key}\ntoo little content from BM25 — trying full crawl…`;
+          } else if (method === 'crawl') {
+            this.currentAction = `read ${provider ?? key}\n${chars} chars — looking for rates in full page…`;
+          } else if (method === 'pdf') {
+            this.currentAction = `read document for ${provider ?? key}\n${chars} chars — extracting from PDF…`;
+          } else {
+            this.currentAction = `scraped: ${key} (${chars} chars)`;
+          }
         } else {
           this.currentAction = `scrape failed: ${key}`;
         }
@@ -174,6 +197,30 @@ class DashboardStore {
       case 'agent':
         this.currentAction = payload.message as string;
         break;
+      case 'log': {
+        const msg = payload.message as string ?? '';
+        // translate internal log messages into human-readable ticker text
+        if (msg.includes('following promising link')) {
+          const link = msg.split('following promising link ')[1] ?? '';
+          const isPdf = link.toLowerCase().endsWith('.pdf');
+          this.currentAction = isPdf
+            ? `found a linked document\ndigging into PDF for rates…\n${link}`
+            : `found a promising page link\ndigging deeper…\n${link}`;
+        } else if (msg.includes('found no data') && msg.includes('trying full /crawl')) {
+          this.currentAction = msg.split(':')[0].trim() + '\nrate not on main page — scanning full content & links…';
+        } else if (msg.includes('Searching for official URL')) {
+          const provider = msg.replace('Searching for official URL: ', '');
+          this.currentAction = `looking up official site\n${provider}`;
+        } else if (msg.includes(': found http')) {
+          const [prov, url] = msg.split(': found ');
+          this.currentAction = `found official site for ${prov}\n${url}`;
+        } else if (msg.includes('no official URL found')) {
+          this.currentAction = msg;
+        } else {
+          this.currentAction = msg;
+        }
+        break;
+      }
       case 'error':
         s.errors = [...s.errors, { tool: payload.tool as string | undefined, message: payload.message as string, ts: time }];
         this.currentAction = `error: ${payload.message}`;
@@ -188,20 +235,26 @@ class DashboardStore {
         break;
       case 'update_start':
         s.updateTotal = payload.total as number;
-        this.currentAction = `starting update: ${payload.total} rows`;
+        this.currentAction = `starting update — ${payload.total} rows to check`;
         break;
-      case 'update_row':
+      case 'update_row': {
+        const provider = payload.provider as string;
+        const changed = payload.changed as boolean;
+        const newRate = payload.newRate as string;
         s.updateRows = [{
-          provider: payload.provider as string,
+          provider,
           url: payload.url as string | undefined,
           oldRate: payload.oldRate as string,
-          newRate: payload.newRate as string,
-          changed: payload.changed as boolean,
+          newRate,
+          changed,
           ts: time,
         }, ...s.updateRows];
         s.updateDone = s.updateDone + 1;
-        this.currentAction = `updated: ${payload.provider}${payload.changed ? ' (changed)' : ''}`;
+        this.currentAction = changed
+          ? `✓ ${provider}\nrate updated → ${newRate}`
+          : `✓ ${provider}\nno change`;
         break;
+      }
     }
 
     const text = formatEvent(type, payload);

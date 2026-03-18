@@ -1,5 +1,11 @@
 import type { Job, Schema, Settings, RecordsResponse } from './types';
 
+let _apiKey = '';
+export function setApiKey(key: string) { _apiKey = key; }
+function authHeaders(): Record<string, string> {
+  return _apiKey ? { 'Authorization': `Bearer ${_apiKey}` } : {};
+}
+
 export async function getJobs(): Promise<{ jobs: Job[] }> {
   return fetch('/jobs').then(r => r.json());
 }
@@ -29,7 +35,7 @@ export async function startIndexJob(body: {
 }): Promise<{ id: string; error?: string }> {
   return fetch('/jobs/index', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   }).then(r => r.json());
 }
@@ -41,7 +47,7 @@ export async function startUpdateJob(body: {
 }): Promise<{ id: string; error?: string }> {
   return fetch('/jobs/update', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   }).then(r => r.json());
 }
@@ -84,6 +90,14 @@ export async function mergeRows(file: string, keepId: number, removeIds: number[
   });
 }
 
+export async function markNotDuplicate(file: string, ids: number[]): Promise<Response> {
+  return fetch(`/outputs/${file}/not-duplicate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
+}
+
 export async function dedupeOutput(file: string): Promise<void> {
   await fetch(`/outputs/${file}/dedupe`, { method: 'POST' });
 }
@@ -93,7 +107,9 @@ export async function deleteOutput(file: string): Promise<void> {
 }
 
 export async function getSettings(): Promise<Settings> {
-  return fetch('/settings').then(r => r.json());
+  const s: Settings = await fetch('/settings').then(r => r.json());
+  if (s.apiKey) setApiKey(s.apiKey);
+  return s;
 }
 
 export async function saveSettings(body: Settings): Promise<Response> {

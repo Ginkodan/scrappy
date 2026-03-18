@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getRecords, mergeRows } from '../lib/api';
+  import { getRecords, mergeRows, markNotDuplicate } from '../lib/api';
   import { buildDupGroups, groupMaxScore, dupScaleHtml } from '../lib/dedup';
 
   const { file, refreshTick }: { file: string | null; refreshTick: number } = $props();
@@ -12,6 +12,7 @@
     borderColor: string | null;
     mergeKeepId: number | null;
     mergeRemoveIds: number[];
+    allGroupIds: number[];
     mergeConfidence: string;
     mergeBtnColor: string;
     mergeBtnBg: string;
@@ -74,6 +75,11 @@
           ? groupMaxScore(origIdx, groupIndices!, rows as Record<string, unknown>[], useKeyFields, rateFields)
           : 0;
 
+        // all rows in a group share the same allGroupIds for optimistic dismissal
+        const allGroupIds: number[] = isInGroup
+          ? groupIndices!.map(i => Number((rows[i] as Record<string, string>)['_id']))
+          : [];
+
         let mergeKeepId: number | null = null;
         let mergeRemoveIds: number[] = [];
         let mergeConfidence = '';
@@ -104,6 +110,7 @@
           borderColor,
           mergeKeepId,
           mergeRemoveIds,
+          allGroupIds,
           mergeConfidence,
           mergeBtnColor,
           mergeBtnBg,
@@ -132,6 +139,31 @@
       await loadRecords();
     } catch (e) {
       alert('Merge error: ' + (e as Error).message);
+    }
+  }
+
+  // Set of "id1,id2,..." keys for groups the user dismissed (optimistic)
+  let dismissedGroups = $state(new Set<string>());
+
+  async function handleNotDuplicate(ids: number[]) {
+    if (!file) return;
+    const validIds = ids.filter(id => Number.isFinite(id));
+    if (validIds.length < 2) return;
+    const key = [...validIds].sort((a, b) => a - b).join(',');
+    // Optimistic: hide the group immediately
+    dismissedGroups.add(key);
+    try {
+      const res = await markNotDuplicate(file, validIds);
+      if (res && !res.ok) {
+        // revert optimistic update if server rejected
+        dismissedGroups.delete(key);
+        return;
+      }
+      await loadRecords();
+      dismissedGroups.delete(key);
+    } catch(e) {
+      dismissedGroups.delete(key);
+      console.error('[not-dup] error:', e);
     }
   }
 
@@ -169,17 +201,26 @@
         </tr>
       </thead>
       <tbody>
-        {#each displayRows as dr (dr.origIdx)}
+        {#each displayRows.filter(dr => {
+          if (!dr.allGroupIds.length) return true;
+          const key = [...dr.allGroupIds].sort((a, b) => a - b).join(',');
+          return !dismissedGroups.has(key);
+        }) as dr (dr.origIdx)}
           <tr style={dr.borderColor ? `border-left:2px solid ${dr.borderColor};background:${dr.borderColor}0d` : ''}>
             <td style="text-align:center;white-space:nowrap;vertical-align:middle">
               {@html dupScaleHtml(dr.rowScore)}
               {#if dr.isFirstOfGroup && dr.mergeKeepId !== null}
-                <div style="margin-top:0.2rem">
+                <div style="margin-top:0.2rem;display:flex;gap:0.2rem">
                   <button
                     onclick={() => handleMerge(dr.mergeKeepId!, dr.mergeRemoveIds)}
-                    style="width:auto;padding:0.15rem 0.45rem;font-size:0.65rem;background:{dr.mergeBtnBg};color:{dr.mergeBtnColor};border:1px solid {dr.mergeBtnBorder};border-radius:3px;cursor:pointer;white-space:nowrap"
-                    title="Confidence: {dr.mergeConfidence}."
-                  >Merge ({dr.mergeConfidence})</button>
+                    style="padding:0.2rem 0.35rem;font-size:0.85rem;line-height:1;background:{dr.mergeBtnBg};color:{dr.mergeBtnColor};border:1px solid {dr.mergeBtnBorder};border-radius:3px;cursor:pointer"
+                    title="Merge ({dr.mergeConfidence})"
+                  >⇢</button>
+                  <button
+                    onclick={() => handleNotDuplicate(dr.allGroupIds)}
+                    style="padding:0.2rem 0.35rem;font-size:0.85rem;line-height:1;background:#1a1a1a;color:#555;border:1px solid #2a2a2a;border-radius:3px;cursor:pointer"
+                    title="Not a duplicate — dismiss this group"
+                  >✕</button>
                 </div>
               {/if}
             </td>

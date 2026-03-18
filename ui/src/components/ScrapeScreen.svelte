@@ -1,7 +1,6 @@
 <script lang="ts">
   import IndexTab from './tabs/IndexTab.svelte';
   import UpdateTab from './tabs/UpdateTab.svelte';
-  import TestTab from './tabs/TestTab.svelte';
   import SchemasTab from './tabs/SchemasTab.svelte';
   import RecordsTab from './RecordsTab.svelte';
   import { dashStore } from '../stores/dashboard.svelte';
@@ -21,12 +20,11 @@
     onSelectsReload: () => void;
   } = $props();
 
-  let activeTab = $state<'index' | 'update' | 'test' | 'schemas'>('index');
   let datasets = $state<string[]>(initialOutputs);
   let selectedDataset = $state<string | null>(null);
   let recordsTick = $state(0);
+  let activePanel = $state<'index' | 'update' | 'schemas' | null>(null);
 
-  // Keep datasets in sync with parent outputs prop
   $effect(() => { datasets = initialOutputs; });
 
   async function refreshDatasets() {
@@ -38,155 +36,170 @@
   function openDataset(name: string) {
     selectedDataset = name;
     recordsTick++;
+    activePanel = null;
+  }
+
+  function togglePanel(panel: 'index' | 'update' | 'schemas') {
+    activePanel = activePanel === panel ? null : panel;
   }
 
   async function handleDelete(name: string) {
-    if (!confirm(`Delete dataset "${name}"? This cannot be undone.`)) return;
+    if (!confirm(`Delete dataset "${name}"?`)) return;
     await deleteOutput(name);
     if (selectedDataset === name) selectedDataset = null;
     await refreshDatasets();
   }
+
+  function onJobStarted() {
+    activePanel = null;
+  }
+
+  const activeFile = $derived(selectedDataset ?? dashStore.recordsFile ?? null);
 </script>
 
-<div class="scrape-layout">
-  <!-- Left: forms + datasets -->
-  <div class="scrape-left">
-    <div class="card">
-      <div class="tabs">
-        {#each (['index', 'update', 'test', 'schemas'] as const) as tab}
-          <div class="tab" class:active={activeTab === tab} onclick={() => activeTab = tab}>
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
-          </div>
-        {/each}
-      </div>
-      <div class="panel" class:active={activeTab === 'index'}>
-        <IndexTab {schemas} />
-      </div>
-      <div class="panel" class:active={activeTab === 'update'}>
-        <UpdateTab {schemas} outputs={datasets} />
-      </div>
-      <div class="panel" class:active={activeTab === 'test'}>
-        <TestTab {schemas} />
-      </div>
-      <div class="panel" class:active={activeTab === 'schemas'}>
-        <SchemasTab {onSchemaEdit} {onNewSchema} {onSelectsReload} />
-      </div>
-    </div>
-
-    <!-- Datasets -->
-    <div class="card">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
-        <div class="section-title" style="margin-bottom:0">Datasets</div>
-        <button class="refresh-btn" onclick={refreshDatasets} title="Refresh">↺</button>
-      </div>
+<!-- Dataset + action bar -->
+<div class="top-bar">
+  <div class="dataset-select-wrap">
+    <select
+      class="dataset-select"
+      value={activeFile ?? ''}
+      onchange={(e) => { const v = (e.target as HTMLSelectElement).value; if (v) openDataset(v); }}
+    >
       {#if datasets.length === 0}
-        <div class="empty">No datasets yet.</div>
+        <option value="">(no datasets yet)</option>
       {:else}
-        <div class="dataset-list">
-          {#each datasets as name (name)}
-            <div class="dataset-row" class:selected={selectedDataset === name}>
-              <button class="dataset-name" onclick={() => openDataset(name)}>{name}</button>
-              <div class="dataset-actions">
-                <a class="dl-link" href="/outputs/{name}" title="Download CSV">↓</a>
-                <button class="del-btn" onclick={() => handleDelete(name)} title="Delete">✕</button>
-              </div>
-            </div>
-          {/each}
-        </div>
+        <option value="">— select dataset —</option>
+        {#each datasets as name (name)}
+          <option value={name}>{name}</option>
+        {/each}
       {/if}
-    </div>
+    </select>
+    {#if activeFile}
+      <a class="ds-btn" href="/outputs/{activeFile}" title="Download CSV">↓</a>
+      <button class="ds-btn del" onclick={() => handleDelete(activeFile!)} title="Delete dataset">✕</button>
+    {/if}
   </div>
 
-  <!-- Right: records -->
-  <div class="scrape-right">
-    {#if selectedDataset}
-      <RecordsTab file={selectedDataset} refreshTick={recordsTick} />
-    {:else if dashStore.recordsFile}
-      <RecordsTab file={dashStore.recordsFile} refreshTick={dashStore.recordsRefreshTick} />
-    {:else}
-      <div class="dash-empty">Select a dataset to view records</div>
-    {/if}
+  <div class="action-btns">
+    <button
+      class="action-btn" class:active={activePanel === 'index'}
+      onclick={() => togglePanel('index')} title="New index job"
+    >+ Index</button>
+    <button
+      class="action-btn" class:active={activePanel === 'update'}
+      onclick={() => togglePanel('update')} title="Update rates"
+    >↻ Update</button>
+    <button
+      class="action-btn" class:active={activePanel === 'schemas'}
+      onclick={() => togglePanel('schemas')} title="Manage schemas"
+    >⚙ Schemas</button>
+    <button class="action-btn icon" onclick={refreshDatasets} title="Refresh datasets">↺</button>
   </div>
 </div>
 
-<style>
-  .scrape-layout {
-    display: grid;
-    grid-template-columns: 320px 1fr;
-    gap: 1.25rem;
-  }
-  .scrape-left {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    min-width: 0;
-  }
-  .scrape-right {
-    min-width: 0;
-    overflow: hidden;
-  }
+<!-- Inline panel -->
+{#if activePanel}
+  <div class="inline-panel">
+    {#if activePanel === 'index'}
+      <IndexTab {schemas} onStarted={onJobStarted} />
+    {:else if activePanel === 'update'}
+      <UpdateTab {schemas} outputs={datasets} onStarted={onJobStarted} />
+    {:else if activePanel === 'schemas'}
+      <SchemasTab {onSchemaEdit} {onNewSchema} {onSelectsReload} />
+    {/if}
+  </div>
+{/if}
 
-  .dataset-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-  .dataset-row {
+<!-- Records — full width -->
+<div class="records-area">
+  {#if activeFile}
+    <RecordsTab file={activeFile} refreshTick={activeFile === selectedDataset ? recordsTick : dashStore.recordsRefreshTick} />
+  {:else}
+    <div class="dash-empty" style="height:300px">Select a dataset above to view records</div>
+  {/if}
+</div>
+
+<style>
+  .top-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.35rem 0.5rem;
-    border: 1px solid #1a1a1a;
-    border-radius: 4px;
-    background: #0d0d0d;
-    transition: border-color 0.15s;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+    min-width: 0;
   }
-  .dataset-row:hover { border-color: #2a2a2a; }
-  .dataset-row.selected { border-color: #00bcd4; }
 
-  .dataset-name {
-    all: unset;
-    cursor: pointer;
-    font-size: 0.78rem;
-    font-family: monospace;
-    color: #bbb;
+  .dataset-select-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0;
     flex: 1;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    border: 1px solid #1e1e1e;
+    border-radius: 4px;
+    background: #0d0d0d;
+    max-width: 320px;
   }
-  .dataset-name:hover { color: #00bcd4; }
 
-  .dataset-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    flex-shrink: 0;
+  .dataset-select {
+    all: unset;
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    font-family: monospace;
+    color: #888;
+    padding: 0.28rem 0.5rem;
+    cursor: pointer;
+    background: transparent;
+    appearance: auto;
+    -webkit-appearance: auto;
   }
-  .dl-link {
-    font-size: 0.72rem;
-    color: #444;
+  .dataset-select:focus { outline: none; color: #ccc; }
+
+  .ds-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: #666;
+    padding: 0.28rem 0.35rem;
     text-decoration: none;
     transition: color 0.15s;
-  }
-  .dl-link:hover { color: #00bcd4; }
-  .del-btn {
-    all: unset;
-    cursor: pointer;
-    font-size: 0.75rem;
-    color: #333;
+    border-left: 1px solid #1a1a1a;
     line-height: 1;
-    transition: color 0.15s;
   }
-  .del-btn:hover { color: #ef5350; }
+  .ds-btn:hover { color: #aaa; }
+  .ds-btn.del:hover { color: #ef5350; }
 
-  .refresh-btn {
+  .action-btns {
+    display: flex;
+    gap: 0.35rem;
+    flex-shrink: 0;
+  }
+
+  .action-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.85rem;
-    color: #444;
-    transition: color 0.15s;
+    font-size: 0.72rem;
+    color: #888;
+    border: 1px solid #2a2a2a;
+    border-radius: 4px;
+    padding: 0.3rem 0.6rem;
+    background: #0d0d0d;
+    white-space: nowrap;
+    transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
-  .refresh-btn:hover { color: #aaa; }
+  .action-btn:hover { color: #ccc; border-color: #444; }
+  .action-btn.active { color: #00bcd4; border-color: #00bcd4; background: #001a1f; }
+  .action-btn.icon { padding: 0.3rem 0.5rem; }
+
+  .inline-panel {
+    background: #0a0a0a;
+    border: 1px solid #1e1e1e;
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .records-area {
+    min-width: 0;
+  }
 </style>

@@ -1,6 +1,10 @@
 import type { ScrapeResult } from "../types.js";
 
 const LINK_REGEX = /\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
+// matches an HTML tag containing href, capturing href value and all remaining attributes
+// so we can also extract data-tracking-topic / title / aria-label as link text
+const TAG_REGEX = /<[^>]+href=["']([^"']+)["']([^>]*)>/gi;
+const TEXT_ATTR_REGEX = /(?:data-tracking-topic|title|aria-label)=["']([^"']+)["']/i;
 
 export async function scrapeUrl(
   url: string,
@@ -27,6 +31,8 @@ export async function scrapeUrl(
   const data = await res.json() as {
     results?: Array<{
       markdown?: { raw_markdown?: string; fit_markdown?: string } | string;
+      html?: string;
+      cleaned_html?: string;
       success?: boolean;
       error_message?: string;
     }>;
@@ -48,11 +54,32 @@ export async function scrapeUrl(
     // prefer fit_markdown, fall back to raw_markdown when fit is too short
     markdown = fit.length >= 200 ? fit : raw;
   }
-  const links: string[] = [];
+
+  // extract markdown-formatted links
+  const linkMap = new Map<string, string>(); // url → text
   let match: RegExpExecArray | null;
+  LINK_REGEX.lastIndex = 0;
   while ((match = LINK_REGEX.exec(markdown)) !== null) {
-    links.push(match[1]);
+    const mdText = /\[([^\]]*)\]/.exec(match[0])?.[1] ?? "";
+    if (!linkMap.has(match[1])) linkMap.set(match[1], mdText);
   }
 
-  return { url, markdown, links: [...new Set(links)] };
+  // also scan raw HTML for href attributes (catches web components like <bal-list-item href>)
+  // extract text from data-tracking-topic / title / aria-label for better link scoring
+  const rawHtml = result.cleaned_html ?? result.html ?? "";
+  const base = (() => { try { return new URL(url); } catch { return null; } })();
+  TAG_REGEX.lastIndex = 0;
+  while ((match = TAG_REGEX.exec(rawHtml)) !== null) {
+    const href = match[1].trim();
+    if (!href || href.startsWith("#") || href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) continue;
+    try {
+      const resolved = new URL(href, base ?? undefined).href;
+      if (!linkMap.has(resolved)) {
+        const textAttr = TEXT_ATTR_REGEX.exec(match[2] ?? "");
+        linkMap.set(resolved, textAttr ? textAttr[1] : "");
+      }
+    } catch { /* ignore unparseable */ }
+  }
+
+  return { url, markdown, links: [...linkMap.entries()].map(([u, t]) => ({ url: u, text: t })) };
 }
