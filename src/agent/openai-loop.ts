@@ -132,21 +132,21 @@ function buildSystemPrompt(
 ## Target schema
 ${fieldList}
 
-## Workflow — follow this exactly, step by step
-1. Plan: briefly note which search queries you will run and why.
-2. Search: call search_google for 2-3 queries covering the topic from different angles.
-3. Scrape: call scrape_url for each returned URL.
-4. Extract: after EACH scrape_url call, immediately call extract_structured_data with the records you found (empty array if none — still required).
-5. Follow links: from aggregator/comparison pages, scrape every linked individual provider page — those are the authoritative source.
-6. Repeat: keep searching and scraping until all referenced providers have been visited directly. Most topics have 20–50+ providers.
-7. Finish: only call finish after exhausting all known provider pages AND running additional searches to catch any missed ones.
+## Workflow — follow exactly
+1. Plan: briefly note which queries you will run.
+2. Search: call search_google for 2-3 queries from different angles (you may call multiple in parallel).
+3. Scrape comparison portals first (moneyland.ch, comparis.ch, finpension.ch, evaluno.ch, etc.) — they list many providers on one page.
+4. After EACH scrape_url, immediately call extract_structured_data with all records you found (pass empty array if none — still required). For comparison site pages: extract every provider record listed; leave the url field blank if you only have a comparison site URL.
+5. From comparison pages, collect all links to individual provider/bank pages and scrape those too — official pages have authoritative data and you should prefer their records.
+6. Keep searching and scraping until all referenced providers have been visited. Most topics have 20–50+ providers.
+7. Only call finish after exhausting all known provider pages AND running follow-up searches to catch missed ones.
 
 ## Rules
-- Always use the tools provided — never describe what you would do without calling a tool
-- Call extract_structured_data after every scrape_url — no exceptions
+- Always call tools — never describe what you would do without calling a tool
+- Call extract_structured_data after EVERY scrape_url call — no exceptions, even for 0 records
+- You may call multiple search_google in parallel; for scrape_url try to batch multiple at once too
 - Never scrape the same URL twice
 - Only save records where all required fields are clearly stated — no guessing
-- Leave the url field blank rather than using a comparison/aggregator URL
 - Records collected so far: ${recordCount}${seedSection}${visitedSection}`;
 }
 
@@ -244,7 +244,6 @@ export async function runAgentOpenAI(
           ],
           tools,
           tool_choice: "required",
-          parallel_tool_calls: false,
         }),
       log
     );
