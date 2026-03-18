@@ -1,11 +1,12 @@
 import { runAgent } from "../agent/loop.js";
+import { runAgentOpenAI } from "../agent/openai-loop.js";
 import { runUpdate } from "../commands/update.js";
 import { appendRecords, listDatasets } from "../tools/records.js";
 import type { RunConfig, SchemaDefinition, ExtractedRecord, EmitFn } from "../types.js";
 import { emitEvent, finishJob, type Job } from "./jobs.js";
 import { db } from "./db.js";
 import { readSettings } from "./settings.js";
-import { createAnthropicClient, createOpenAIClient, createZordMindClient } from "../agent/llm-client.js";
+import { createAnthropicClient, createOpenAIClient, createZordMindClient, type OpenAILLMClient } from "../agent/llm-client.js";
 import { dbListSchemas, dbGetSchema } from "./schema-store.js";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
@@ -65,7 +66,12 @@ export async function runIndexJob(job: Job): Promise<void> {
       totalSkipped += skipped;
     };
 
-    await runAgent(config, makeLLMClient(), SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
+    const llmClient = makeLLMClient();
+    if (llmClient.provider === "openai") {
+      await runAgentOpenAI(config, llmClient as OpenAILLMClient, SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
+    } else {
+      await runAgent(config, llmClient, SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
+    }
     if (job.abortController.signal.aborted) {
       finishJob(job, "cancelled", "Cancelled by user");
     } else {

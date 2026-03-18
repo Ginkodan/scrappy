@@ -11,6 +11,12 @@ export interface LLMClient {
   agentModel: string;
   /** Model ID used for lightweight extraction (update command) */
   extractModel: string;
+  provider: "anthropic" | "openai" | "zordmind";
+}
+
+export interface OpenAILLMClient extends LLMClient {
+  provider: "openai";
+  rawClient: OpenAI;
 }
 
 export function createAnthropicClient(
@@ -20,6 +26,7 @@ export function createAnthropicClient(
 ): LLMClient {
   const client = new Anthropic({ apiKey });
   return {
+    provider: "anthropic",
     agentModel,
     extractModel,
     messages: {
@@ -94,6 +101,7 @@ export function createZordMindClient(baseUrl: string, model: string): LLMClient 
   }
 
   return {
+    provider: "zordmind",
     agentModel: model,
     extractModel: model,
     messages: {
@@ -184,7 +192,7 @@ export function createZordMindClient(baseUrl: string, model: string): LLMClient 
   };
 }
 
-export function createOpenAIClient(apiKey: string, model = "gpt-5.4", extractModel = "gpt-5.4-mini"): LLMClient {
+export function createOpenAIClient(apiKey: string, model = "gpt-5.4", extractModel = "gpt-5.4-mini"): OpenAILLMClient {
   const client = new OpenAI({ apiKey });
 
   function toOpenAIMessages(
@@ -258,8 +266,10 @@ export function createOpenAIClient(apiKey: string, model = "gpt-5.4", extractMod
   }
 
   return {
+    provider: "openai",
     agentModel: model,
     extractModel,
+    rawClient: client,
     messages: {
       async create(
         params: Anthropic.Messages.MessageCreateParamsNonStreaming
