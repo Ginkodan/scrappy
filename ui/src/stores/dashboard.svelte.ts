@@ -288,7 +288,7 @@ class DashboardStore {
     // access _elapsedTick to create dependency
     void this._elapsedTick;
     if (!this.jobStartedAt) return '--';
-    const ms = Date.now() - this.jobStartedAt.getTime();
+    const ms = Math.max(0, Date.now() - this.jobStartedAt.getTime());
     const s = Math.floor(ms / 1000);
     const m = Math.floor(s / 60);
     const h = Math.floor(m / 60);

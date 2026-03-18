@@ -175,10 +175,14 @@ const CONTEXT_WINDOW = 4;
 
 function trimMessages(messages: OpenAI.ChatCompletionMessageParam[]): void {
   // messages[0] is always the initial user prompt
-  // each iteration is: assistant + N tool messages
   // Keep first message + last CONTEXT_WINDOW*2 messages
   if (messages.length > 1 + CONTEXT_WINDOW * 2) {
     messages.splice(1, messages.length - 1 - CONTEXT_WINDOW * 2);
+  }
+  // After trimming, the cut may land mid-turn leaving orphaned tool messages
+  // (tool messages with no preceding assistant+tool_calls). Drop them.
+  while (messages.length > 1 && messages[1].role === "tool") {
+    messages.splice(1, 1);
   }
 }
 
