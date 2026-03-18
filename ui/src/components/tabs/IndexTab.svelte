@@ -23,7 +23,7 @@
       topic: topic.trim(),
       schema: selectedSchema,
       output: cleanOutput,
-      ...(maxIter.trim() ? { maxIterations: maxIter.trim() } : {}),
+      ...(maxIter ? { maxIterations: String(maxIter) } : {}),
     });
     loading = false;
     await jobsStore.refresh();
