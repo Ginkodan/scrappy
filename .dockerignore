@@ -1,7 +1,6 @@
 node_modules
 ui/node_modules
 ui/dist
-docs/.vitepress/dist
 docs/.vitepress/cache
 data
 output
