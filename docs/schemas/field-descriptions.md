@@ -8,10 +8,10 @@ Field descriptions are the most important part of a schema. The agent reads them
 
 ```typescript
 // Bad
-interestRate: "The interest rate"
+monthlyPrice: "The price"
 
 // Good
-interestRate: "Annual interest rate as shown by the provider (e.g. '0.75%' or '0.39%–0.45%' for tiered rates). Use the provider's exact notation."
+monthlyPrice: "Monthly price in CHF as shown by the provider (e.g. '29.90' or '19.90–39.90' for tiered). Use the provider's exact notation."
 ```
 
 ### Clarify what NOT to include
@@ -21,14 +21,14 @@ interestRate: "Annual interest rate as shown by the provider (e.g. '0.75%' or '0
 url: "Direct URL to the official provider product page (not a comparison site URL)"
 
 // Good — prevents legal suffixes
-providerName: "Common short name of the bank without legal suffixes (e.g. 'UBS' not 'UBS AG', 'Migros Bank' not 'Migros Bank AG')"
+providerName: "Common short name of the provider without legal suffixes (e.g. 'Sunrise' not 'Sunrise Communications AG')"
 ```
 
 ### Describe the field's scope
 
 ```typescript
 // Good — tells the agent when to use a range vs a single value
-interestRate: "Annual interest rate. Use a single value like '0.75%' if there is one rate. Use a range like '0.39%–0.45%' if the rate varies by balance tier. Do NOT create separate records per tier."
+monthlyPrice: "Monthly price in CHF. Use a single value like '29.90' if there is one price. Use a range like '19.90–39.90' if the price varies by tier. Do NOT create separate records per tier."
 ```
 
 ## Naming rules

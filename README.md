@@ -115,29 +115,29 @@ import type { SchemaDefinition } from "../src/types.js";
 
 const schemaDef: SchemaDefinition = {
   schema: z.object({
-    productName: z.string(),
     providerName: z.string(),
-    interestRate: z.string(),
+    planName: z.string(),
+    monthlyPrice: z.string(),
     url: z.string().optional(),
   }),
   fieldDescriptions: {
-    productName: "Full product name as shown by the provider",
-    providerName: "Name of the bank or institution",
-    interestRate: "Annual interest rate (e.g. '0.75%' or '0.39%–0.45%' for tiered)",
+    providerName: "Name of the provider (e.g. 'Sunrise', 'Salt')",
+    planName: "Official plan name as shown by the provider",
+    monthlyPrice: "Monthly price in CHF (e.g. '29.90')",
     url: "Direct URL to the official product page",
   },
-  dedupeKey: ["productName", "providerName"],
+  dedupeKey: ["providerName", "planName"],
   urlField: "url",
-  rateFields: ["interestRate"],
+  rateFields: ["monthlyPrice"],
   namingRules: [
-    "providerName: use the common short name, no legal suffixes (e.g. 'UBS' not 'UBS AG')",
+    "providerName: use the common short name, no legal suffixes (e.g. 'Sunrise' not 'Sunrise Communications AG')",
   ],
 };
 
 export default schemaDef;
 ```
 
-Schemas can also be created and edited via the UI.
+Schemas can also be created and edited via the UI — no TypeScript file needed.
 
 ---
 
