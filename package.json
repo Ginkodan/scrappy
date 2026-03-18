@@ -24,13 +24,13 @@
     "fastify": "^5.8.2",
     "openai": "^6.32.0",
     "pdf-parse": "^1.1.1",
+    "tsx": "^4.21.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^25.5.0",
     "@types/pdf-parse": "^1.1.5",
-    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitepress": "^1.6.4"
   }

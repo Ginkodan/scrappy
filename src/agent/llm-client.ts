@@ -283,8 +283,9 @@ export function createOpenAIClient(apiKey: string, model = "gpt-5.4", extractMod
           model,
           max_completion_tokens: params.max_tokens,
           messages: oaiMessages,
+          stream: false,
           ...(oaiTools ? { tools: oaiTools, tool_choice: "required" } : {}),
-        } as Parameters<typeof client.chat.completions.create>[0]);
+        });
 
         const choice = response.choices[0];
         const content: Anthropic.ContentBlock[] = [];

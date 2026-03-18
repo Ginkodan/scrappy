@@ -12,26 +12,32 @@ RUN npm ci
 COPY ui/package*.json ./ui/
 RUN cd ui && npm ci
 
-# --- build UI ---
-FROM deps AS ui-build
+# --- build UI + server ---
+FROM deps AS build
 COPY ui/ ./ui/
 RUN cd ui && npm run build
 
+COPY src/ ./src/
+COPY schemas/ ./schemas/
+COPY tsconfig.json ./
+RUN npx tsc
+
 # --- production image ---
-FROM base AS runner
+FROM node:22-alpine AS runner
 WORKDIR /app
+
+RUN apk add --no-cache python3 make g++
 
 COPY package*.json ./
 RUN npm ci --omit=dev
 
-COPY --from=ui-build /app/public ./public
-COPY src/ ./src/
+COPY --from=build /app/public ./public
+COPY --from=build /app/dist ./dist
 COPY schemas/ ./schemas/
-COPY tsconfig.json ./
 
 VOLUME /app/data
 
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "--import", "tsx/esm", "src/server/index.ts"]
+CMD ["node", "dist/server/index.js"]
