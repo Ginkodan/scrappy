@@ -262,12 +262,12 @@
     gap: 0.6rem;
     margin-bottom: 0.5rem;
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.7rem;
+    font-size: 0.78rem;
   }
-  .records-meta-count { color: #d0d0d0; font-weight: 600; }
-  .records-meta-label { color: #666; font-weight: 400; }
+  .records-meta-count { color: #d8d8d8; font-weight: 600; }
+  .records-meta-label { color: #888; font-weight: 400; }
   .records-meta-file {
-    color: #555;
+    color: #777;
     padding-left: 0.4rem;
     border-left: 1px solid #2a2a2a;
   }
@@ -287,7 +287,7 @@
     font-family: "IBM Plex Mono", monospace;
   }
   .dup-conf-badge {
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
@@ -300,8 +300,8 @@
   .dup-conf-badge.possible { background: #1a1a1a; color: #888; border: 1px solid #333; }
 
   .dup-group-desc {
-    font-size: 0.65rem;
-    color: #666;
+    font-size: 0.72rem;
+    color: #888;
     flex-shrink: 0;
   }
   .dup-score-inline {
@@ -320,7 +320,7 @@
   .dup-action-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.65rem;
+    font-size: 0.72rem;
     font-family: "IBM Plex Mono", monospace;
     padding: 0.2rem 0.55rem;
     border-radius: 2px;
@@ -332,7 +332,7 @@
   .dup-action-btn.merge.exact   { color: #4caf50; background: #0d2a0d; border-color: #2a5a2a; }
   .dup-action-btn.merge.likely  { color: #f59e0b; background: #2a1e08; border-color: #5a3a08; }
   .dup-action-btn.merge.possible { color: #aaa; background: #1a1a1a; border-color: #3a3a3a; }
-  .dup-action-btn.dismiss { color: #666; background: #111; border-color: #272727; }
+  .dup-action-btn.dismiss { color: #888; background: #111; border-color: #333; }
   .dup-action-btn.dismiss:hover { color: #aaa; opacity: 1; border-color: #444; }
 
   /* Row group coloring */
@@ -348,7 +348,7 @@
     display: inline-block;
     padding: 0.08rem 0.3rem;
     border-radius: 2px;
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     font-weight: 600;
     letter-spacing: 0.05em;
     text-transform: uppercase;

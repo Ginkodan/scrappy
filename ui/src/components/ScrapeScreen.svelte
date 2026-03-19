@@ -224,11 +224,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 0.6rem;
+    font-size: 0.67rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #666;
+    color: #888;
     padding-bottom: 0.45rem;
     margin-bottom: 0.3rem;
     border-bottom: 1px solid #202020;
@@ -245,8 +245,8 @@
   .sb-icon-btn:hover { color: #bbb; }
 
   .sidebar-empty {
-    font-size: 0.67rem;
-    color: #444;
+    font-size: 0.72rem;
+    color: #666;
     padding: 0.35rem 0;
   }
 
@@ -275,8 +275,8 @@
   .ds-dot.active { background: #22d3ee; }
 
   .ds-name {
-    font-size: 0.72rem;
-    color: #bbb;
+    font-size: 0.82rem;
+    color: #ccc;
     flex: 1;
     min-width: 0;
     overflow: hidden;
@@ -284,8 +284,8 @@
     white-space: nowrap;
     transition: color 0.15s;
   }
-  .dataset-item.active .ds-name { color: #e8e8e8; }
-  .dataset-item:hover .ds-name { color: #ddd; }
+  .dataset-item.active .ds-name { color: #f0f0f0; }
+  .dataset-item:hover .ds-name { color: #e0e0e0; }
 
   .ds-actions {
     display: flex;
@@ -300,15 +300,15 @@
   .ds-act-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.72rem;
-    color: #666;
+    font-size: 0.8rem;
+    color: #777;
     padding: 0.15rem 0.25rem;
     border-radius: 2px;
     line-height: 1;
     text-decoration: none;
     transition: color 0.12s;
   }
-  .ds-act-btn:hover { color: #ccc; }
+  .ds-act-btn:hover { color: #ddd; }
   .ds-act-btn.del:hover { color: #f87171; }
   .ds-act-btn.panel-open { color: #22d3ee; }
 
@@ -324,8 +324,8 @@
   .schema-item:hover { background: #131313; }
 
   .schema-name {
-    font-size: 0.7rem;
-    color: #999;
+    font-size: 0.78rem;
+    color: #bbb;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -345,15 +345,15 @@
   .schema-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.6rem;
-    color: #666;
+    font-size: 0.67rem;
+    color: #777;
     padding: 0.12rem 0.28rem;
-    border: 1px solid #252525;
+    border: 1px solid #2e2e2e;
     border-radius: 2px;
     line-height: 1.4;
     transition: color 0.12s, border-color 0.12s;
   }
-  .schema-btn:hover { color: #bbb; border-color: #444; }
+  .schema-btn:hover { color: #ccc; border-color: #555; }
   .schema-btn.del:hover { color: #f87171; border-color: #4a2020; }
 
   /* ── Content ── */
@@ -393,16 +393,16 @@
 
   .toolbar-hint {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.72rem;
-    color: #444;
+    font-size: 0.8rem;
+    color: #666;
   }
 
   .new-index-btn {
     all: unset;
     cursor: pointer;
-    font-size: 0.72rem;
+    font-size: 0.8rem;
     font-family: "IBM Plex Mono", monospace;
-    color: #999;
+    color: #aaa;
     border: 1px solid #2a2a2a;
     border-radius: 3px;
     padding: 0.3rem 0.7rem;
@@ -427,11 +427,11 @@
 
   .panel-label {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: #444;
+    color: #666;
     margin-bottom: 0.7rem;
   }
   .panel-index  .panel-label { color: #22d3ee; opacity: 0.6; }

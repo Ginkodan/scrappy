@@ -229,15 +229,15 @@
     border-left: 2px solid #4caf50;
     border-radius: 4px;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
-    font-size: 0.72rem;
-    color: #6fcf6f;
+    font-size: 0.8rem;
+    color: #7fcf7f;
     min-width: 0;
     transition: color 0.3s, border-color 0.3s, background 0.3s;
   }
   .action-ticker.idle {
-    color: #4a5a4a;
-    border-color: #161616;
-    border-left-color: #2a3a2a;
+    color: #7a9a7a;
+    border-color: #1a1a1a;
+    border-left-color: #3a4a3a;
     background: #0a0a0a;
   }
   .ticker-dot {
@@ -291,17 +291,17 @@
   }
   .job-selector-label {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.58rem;
+    font-size: 0.65rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #555;
+    color: #777;
     flex-shrink: 0;
   }
   .job-selector-empty {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.65rem;
-    color: #333;
+    font-size: 0.72rem;
+    color: #666;
   }
   .job-chips {
     display: flex;
@@ -351,22 +351,22 @@
   .job-chip-dot.failed  { background: #f44336; }
 
   .job-chip-label {
-    font-size: 0.68rem;
-    color: #999;
+    font-size: 0.75rem;
+    color: #aaa;
     max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.15s;
   }
-  .job-chip.selected .job-chip-label { color: #ddd; }
+  .job-chip.selected .job-chip-label { color: #e0e0e0; }
   .job-chip:hover .job-chip-label { color: #ccc; }
 
   .job-chip-age {
-    font-size: 0.6rem;
-    color: #444;
+    font-size: 0.67rem;
+    color: #666;
     flex-shrink: 0;
   }
-  .job-chip.selected .job-chip-age { color: #666; }
+  .job-chip.selected .job-chip-age { color: #888; }
 
   .job-chip-cancel {
     all: unset;
@@ -382,8 +382,8 @@
 
   .job-chip-more {
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.6rem;
-    color: #444;
+    font-size: 0.67rem;
+    color: #666;
     flex-shrink: 0;
     padding: 0 0.2rem;
   }
@@ -392,8 +392,8 @@
     all: unset;
     cursor: pointer;
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.6rem;
-    color: #444;
+    font-size: 0.67rem;
+    color: #666;
     flex-shrink: 0;
     transition: color 0.15s;
     margin-left: auto;
