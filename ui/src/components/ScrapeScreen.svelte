@@ -300,7 +300,7 @@
   .ds-actions {
     display: flex;
     gap: 0.15rem;
-    opacity: 0;
+    opacity: 0.3;
     transition: opacity 0.15s;
     flex-shrink: 0;
   }
@@ -351,7 +351,7 @@
   .schema-acts {
     display: flex;
     gap: 0.25rem;
-    opacity: 0;
+    opacity: 0.4;
     flex-shrink: 0;
     transition: opacity 0.15s;
   }
