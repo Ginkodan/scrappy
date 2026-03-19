@@ -216,7 +216,7 @@
   .sidebar-section {
     display: flex;
     flex-direction: column;
-    gap: 0;
+    gap: 2px;
   }
   .sidebar-schemas { margin-top: auto; }
 
@@ -230,8 +230,8 @@
     letter-spacing: 0.12em;
     color: #888;
     padding-bottom: 0.45rem;
-    margin-bottom: 0.3rem;
-    border-bottom: 1px solid #202020;
+    margin-bottom: 0.4rem;
+    border-bottom: 1px solid #242424;
   }
 
   .sb-icon-btn {
@@ -255,20 +255,30 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.38rem 0.45rem;
+    padding: 0.38rem 0.5rem;
     border-radius: 3px;
+    border: 1px solid #1e1e1e;
+    background: #111;
     cursor: pointer;
-    transition: background 0.1s;
+    transition: background 0.1s, border-color 0.1s;
     position: relative;
   }
-  .dataset-item:hover { background: #151515; }
-  .dataset-item.active { background: #0e1e1e; }
+  .dataset-item:hover {
+    background: #181818;
+    border-color: #2a2a2a;
+  }
+  .dataset-item.active {
+    background: #071a1f;
+    border-color: #1a4a55;
+    border-left: 2px solid #22d3ee;
+    padding-left: 0.4rem;
+  }
 
   .ds-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #333;
+    background: #3a3a3a;
     flex-shrink: 0;
     transition: background 0.15s;
   }
@@ -317,11 +327,16 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.32rem 0.45rem;
+    padding: 0.32rem 0.5rem;
     border-radius: 3px;
-    transition: background 0.1s;
+    border: 1px solid #1e1e1e;
+    background: #111;
+    transition: background 0.1s, border-color 0.1s;
   }
-  .schema-item:hover { background: #131313; }
+  .schema-item:hover {
+    background: #181818;
+    border-color: #2a2a2a;
+  }
 
   .schema-name {
     font-size: 0.78rem;
