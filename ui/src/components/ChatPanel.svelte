@@ -112,7 +112,7 @@
   .chat-panel {
     border: 1px solid #222;
     border-radius: 8px;
-    background: #0d1117;
+    background: #161c24;
     display: flex;
     flex-direction: column;
     font-family: "IBM Plex Mono", monospace;
@@ -127,7 +127,7 @@
     gap: 0.5rem;
     padding: 0.6rem 0.9rem;
     border-bottom: 1px solid #1e2530;
-    background: #0a0e14;
+    background: #12181f;
     flex-shrink: 0;
   }
   .chat-header-icon {
@@ -269,12 +269,12 @@
     gap: 0.4rem;
     padding: 0.6rem 0.75rem;
     border-top: 1px solid #1a2030;
-    background: #0a0e14;
+    background: #12181f;
   }
 
   .chat-input {
     flex: 1;
-    background: #111820;
+    background: #161d28;
     border: 1px solid #253040;
     border-radius: 8px;
     outline: none;

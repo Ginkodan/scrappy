@@ -2,7 +2,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: #090909;
+  background: #1e1e1e;
   color: #ccc;
   min-height: 100vh;
   padding: 1.5rem;
@@ -27,7 +27,7 @@ body {
 }
 .modal-backdrop.open { display: flex; }
 .modal {
-  background: #141414; border: 1px solid #242424; border-radius: 8px;
+  background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 8px;
   padding: 1.25rem; width: 360px; max-width: 90vw; position: relative;
 }
 .modal-title {
@@ -44,7 +44,7 @@ body {
 
 /* Cards */
 .card {
-  background: #141414;
+  background: #1e1e1e;
   border: 1px solid #242424;
   border-radius: 6px;
   padding: 1rem;
@@ -70,7 +70,7 @@ label span { color: #666; }
 
 input, select {
   width: 100%;
-  background: #0d0d0d;
+  background: #191919;
   border: 1px solid #242424;
   border-radius: 4px;
   padding: 0.4rem 0.55rem;
@@ -108,7 +108,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 .jobs-list { display: flex; flex-direction: column; gap: 0.4rem; overflow-y: auto; max-height: 420px; }
 
 .job-item {
-  background: #0d0d0d;
+  background: #191919;
   border: 1px solid #1e1e1e;
   border-radius: 4px;
   padding: 0.6rem 0.75rem;
@@ -164,7 +164,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 
 /* Stats bar */
 .stats-bar {
-  background: #0d0d0d;
+  background: #191919;
   border: 1px solid #1e1e1e;
   border-left: 2px solid #22d3ee;
   border-radius: 4px;
@@ -193,7 +193,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 .panels-top > *, .panels-mid > * { min-width: 0; }
 
 .dash-panel {
-  background: #111;
+  background: #1e1e1e;
   border: 1px solid #1e1e1e;
   border-left: 2px solid var(--panel-color, #22d3ee);
   border-radius: 4px;
@@ -203,7 +203,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 }
 .dash-panel-header {
   padding: 0.45rem 0.75rem;
-  background: #0d0d0d;
+  background: #191919;
   border-bottom: 1px solid #1e1e1e;
   display: flex; align-items: center; justify-content: space-between;
   flex-shrink: 0;
@@ -251,7 +251,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 
 /* Raw log */
 .raw-log-wrap {
-  background: #141414; border: 1px solid #242424; border-radius: 6px;
+  background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 6px;
 }
 .raw-log-header {
   padding: 0.55rem 0.75rem; display: flex; align-items: center; justify-content: space-between;
@@ -299,7 +299,7 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
   text-transform: uppercase; letter-spacing: 0.08em;
   border-bottom: 2px solid #1e1e1e; white-space: nowrap;
   position: sticky; top: 0;
-  background: #0a0a0a;
+  background: #161616;
   color: #666;
 }
 .records-table th.col-rate   { color: #34d399; }
@@ -321,13 +321,13 @@ button:disabled { background: #1e1e1e; color: #666; cursor: not-allowed; }
 .records-table td.col-source { padding: 0.18rem 0.45rem; }
 .records-table td.col-system { color: #686868; font-size: 0.72rem; }
 
-.records-table tbody tr:hover td { background: #131313; }
+.records-table tbody tr:hover td { background: #1c1c1c; }
 .records-table tbody tr:hover td.col-system { color: #707070; }
 .records-scroll { max-height: calc(100vh - 200px); overflow-y: auto; }
 
 /* Test cases */
 .test-case {
-  background: #0d0d0d;
+  background: #191919;
   border: 1px solid #1e1e1e;
   border-radius: 4px;
   padding: 0.65rem 0.75rem;

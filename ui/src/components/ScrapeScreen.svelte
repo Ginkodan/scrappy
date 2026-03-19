@@ -214,7 +214,7 @@
     margin-right: 1.1rem;
     padding-right: 0.85rem;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
-    background: #0b0b0b;
+    background: #171717;
     overflow: hidden;
   }
 
@@ -281,18 +281,18 @@
     gap: 0.5rem;
     padding: 0.38rem 0.5rem;
     border-radius: 3px;
-    border: 1px solid #1e1e1e;
-    background: #111;
+    border: 1px solid #272727;
+    background: #202020;
     cursor: pointer;
     transition: background 0.1s, border-color 0.1s;
     position: relative;
   }
   .dataset-item:hover {
-    background: #181818;
-    border-color: #2a2a2a;
+    background: #252525;
+    border-color: #333;
   }
   .dataset-item.active {
-    background: #071a1f;
+    background: #0d2530;
     border-color: #1a4a55;
     border-left: 2px solid #22d3ee;
     padding-left: 0.4rem;
@@ -353,13 +353,13 @@
     justify-content: space-between;
     padding: 0.32rem 0.5rem;
     border-radius: 3px;
-    border: 1px solid #1e1e1e;
-    background: #111;
+    border: 1px solid #272727;
+    background: #202020;
     transition: background 0.1s, border-color 0.1s;
   }
   .schema-item:hover {
-    background: #181818;
-    border-color: #2a2a2a;
+    background: #252525;
+    border-color: #333;
   }
 
   .schema-name {
@@ -447,13 +447,13 @@
     border: 1px solid #2a2a2a;
     border-radius: 3px;
     padding: 0.3rem 0.7rem;
-    background: #0e0e0e;
+    background: #1a1a1a;
     white-space: nowrap;
     flex-shrink: 0;
     transition: color 0.15s, border-color 0.15s, background 0.15s;
   }
   .new-index-btn:hover { color: #ddd; border-color: #3a3a3a; }
-  .new-index-btn.active { color: #22d3ee; border-color: #22d3ee; background: #051518; }
+  .new-index-btn.active { color: #22d3ee; border-color: #22d3ee; background: #0a2028; }
 
   /* Inline action panels */
   .content-panel {
@@ -461,7 +461,7 @@
     padding: 0.85rem 1rem;
     margin-bottom: 0.75rem;
     border: 1px solid #1e1e1e;
-    background: #0a0a0a;
+    background: #161616;
   }
   .panel-index  { border-left: 2px solid #22d3ee; }
   .panel-update { border-left: 2px solid #f59e0b; }

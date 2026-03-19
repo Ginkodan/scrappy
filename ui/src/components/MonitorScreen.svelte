@@ -224,7 +224,7 @@
     gap: 0.6rem;
     padding: 0.5rem 0.85rem;
     margin-bottom: 0.75rem;
-    background: #0a150a;
+    background: #111a11;
     border: 1px solid #1a2a1a;
     border-left: 2px solid #4caf50;
     border-radius: 4px;
@@ -238,7 +238,7 @@
     color: #7a9a7a;
     border-color: #1a1a1a;
     border-left-color: #3a4a3a;
-    background: #0a0a0a;
+    background: #161616;
   }
   .ticker-dot {
     width: 5px;
@@ -284,7 +284,7 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
-    background: #0c0c0c;
+    background: #181818;
     border: 1px solid #1e1e1e;
     border-radius: 4px;
     min-width: 0;
@@ -323,20 +323,20 @@
     padding: 0.22rem 0.5rem;
     border-radius: 3px;
     border: 1px solid #1e1e1e;
-    background: #111;
+    background: #1e1e1e;
     white-space: nowrap;
     flex-shrink: 0;
     transition: border-color 0.15s, background 0.15s;
     font-family: "IBM Plex Mono", monospace;
   }
-  .job-chip:hover { border-color: #333; background: #161616; }
+  .job-chip:hover { border-color: #333; background: #252525; }
   .job-chip.selected {
     border-color: #22d3ee;
-    background: #051518;
+    background: #0a2028;
   }
   .job-chip.selected.running {
     border-color: #4caf50;
-    background: #081208;
+    background: #0d1a0d;
   }
 
   .job-chip-dot {
