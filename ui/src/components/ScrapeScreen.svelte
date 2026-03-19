@@ -85,61 +85,66 @@
         <span>Datasets</span>
         <button class="sb-icon-btn" onclick={refreshDatasets} title="Refresh">↺</button>
       </div>
-
-      {#if datasets.length === 0}
-        <div class="sidebar-empty">No datasets yet</div>
-      {:else}
-        {#each datasets as name (name)}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-          <div
-            class="dataset-item"
-            class:active={activeFile === name}
-            onclick={() => handleDatasetClick(name)}
-          >
-            <span class="ds-dot" class:active={activeFile === name}></span>
-            <span class="ds-name">{name}</span>
-            <div class="ds-actions">
-              <button
-                class="ds-act-btn"
-                class:panel-open={activePanel === 'update' && activeFile === name}
-                onclick={(e) => { e.stopPropagation(); handleUpdateClick(name); }}
-                title="Update"
-              >↻</button>
-              <a
-                class="ds-act-btn"
-                href="/outputs/{name}"
-                onclick={(e) => e.stopPropagation()}
-                title="Download CSV"
-              >↓</a>
-              <button
-                class="ds-act-btn del"
-                onclick={(e) => { e.stopPropagation(); handleDelete(name); }}
-                title="Delete dataset"
-              >✕</button>
+      <div class="sidebar-scroll">
+        {#if datasets.length === 0}
+          <div class="sidebar-empty">No datasets yet</div>
+        {:else}
+          {#each datasets as name (name)}
+            <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+            <div
+              class="dataset-item"
+              class:active={activeFile === name}
+              onclick={() => handleDatasetClick(name)}
+            >
+              <span class="ds-dot" class:active={activeFile === name}></span>
+              <span class="ds-name">{name}</span>
+              <div class="ds-actions">
+                <button
+                  class="ds-act-btn"
+                  class:panel-open={activePanel === 'update' && activeFile === name}
+                  onclick={(e) => { e.stopPropagation(); handleUpdateClick(name); }}
+                  title="Update"
+                >↻</button>
+                <a
+                  class="ds-act-btn"
+                  href="/outputs/{name}"
+                  onclick={(e) => e.stopPropagation()}
+                  title="Download CSV"
+                >↓</a>
+                <button
+                  class="ds-act-btn del"
+                  onclick={(e) => { e.stopPropagation(); handleDelete(name); }}
+                  title="Delete dataset"
+                >✕</button>
+              </div>
             </div>
-          </div>
-        {/each}
-      {/if}
+          {/each}
+        {/if}
+      </div>
     </div>
 
-    <div class="sidebar-section sidebar-schemas">
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
       <div class="sidebar-sec-header">
         <span>Schemas</span>
         <button class="sb-icon-btn" onclick={onNewSchema} title="New schema">+</button>
       </div>
-      {#if schemas.length === 0}
-        <div class="sidebar-empty">No schemas yet</div>
-      {:else}
-        {#each schemas as s}
-          <div class="schema-item">
-            <span class="schema-name">{s.display_name}</span>
-            <div class="schema-acts">
-              <button class="schema-btn" onclick={() => onSchemaEdit(s.id)}>edit</button>
-              <button class="schema-btn del" onclick={() => handleDeleteSchema(s.id)}>del</button>
+      <div class="sidebar-scroll">
+        {#if schemas.length === 0}
+          <div class="sidebar-empty">No schemas yet</div>
+        {:else}
+          {#each schemas as s}
+            <div class="schema-item">
+              <span class="schema-name">{s.display_name}</span>
+              <div class="schema-acts">
+                <button class="schema-btn" onclick={() => onSchemaEdit(s.id)}>edit</button>
+                <button class="schema-btn del" onclick={() => handleDeleteSchema(s.id)}>del</button>
+              </div>
             </div>
-          </div>
-        {/each}
-      {/if}
+          {/each}
+        {/if}
+      </div>
     </div>
 
   </aside>
@@ -195,7 +200,7 @@
   .scrape-layout {
     display: flex;
     gap: 0;
-    min-height: 0;
+    height: calc(100vh - 7rem);
     min-width: 0;
   }
 
@@ -208,17 +213,36 @@
     border-right: 1px solid #1e1e1e;
     margin-right: 1.1rem;
     padding-right: 0.85rem;
-    gap: 1.5rem;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
     background: #0b0b0b;
+    overflow: hidden;
   }
 
   .sidebar-section {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 2px;
+    padding-bottom: 0.5rem;
+    scrollbar-width: thin;
+    scrollbar-color: #242424 transparent;
   }
-  .sidebar-schemas { margin-top: auto; }
+
+  .sidebar-divider {
+    flex-shrink: 0;
+    height: 1px;
+    background: #222;
+    margin: 0.5rem 0;
+  }
 
   .sidebar-sec-header {
     display: flex;
@@ -375,9 +399,11 @@
   .scrape-content {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
+    overflow-y: auto;
   }
 
   .content-toolbar {
