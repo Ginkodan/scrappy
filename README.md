@@ -24,14 +24,13 @@ Records are tagged `_dataSource: "comparison"` or `"official"`. If the same reco
 
 ### Update — Data refresh
 
-Used to keep existing records up to date without re-running a full index:
+Used to keep existing records up to date without re-running a full index. Each record goes through a 3-stage pipeline:
 
-1. Records with a stored official URL are scraped directly
-2. Records with only a comparison URL trigger a Google search to find the official page first
-3. Crawl4AI fetches the page using BM25 keyword filtering (returns only the relevant content sections)
-4. Claude Haiku extracts the tracked fields from the filtered markdown
-5. Values are compared numerically (avoids false positives from formatting differences like `"0.45%"` vs `"0.45% p. a."`)
-6. Changed rows are updated in the database with a new `_lastUpdated` timestamp
+1. **Stage 1 — BM25 scrape.** Crawl4AI fetches the page with BM25 filtering, returning only the sections relevant to the tracked field descriptions. Claude Haiku extracts the values. If found, done.
+2. **Stage 2 — Full crawl.** If stage 1 found nothing, the full page is fetched. Helps with JS-rendered widgets and web components.
+3. **Stage 3 — Follow links.** If still nothing, outbound links are scored by relevance using keywords derived from the schema's field names and descriptions — PDFs score highest. Top 5 links are scraped.
+
+Records with a comparison-site URL go through a Google SERP search first to find the official provider URL. Values are compared numerically to avoid false positives from formatting differences (`"0.45%"` vs `"0.45% p.a."` = no change).
 
 ---
 
@@ -45,7 +44,8 @@ Used to keep existing records up to date without re-running a full index:
                          │ REST + SSE
 ┌────────────────────────▼────────────────────────────────┐
 │                    Fastify Server                         │
-│  /jobs  /schemas  /outputs  /settings  /jobs/:id/stream  │
+│  /jobs  /schemas  /outputs  /settings  /chat             │
+│  /jobs/:id/stream                                        │
 └──────────┬─────────────────────────┬────────────────────┘
            │                         │
 ┌──────────▼──────────┐   ┌─────────▼──────────────┐
@@ -70,16 +70,16 @@ src/
 │   ├── loop.ts           Agent loop with tool orchestration
 │   └── llm-client.ts     LLM abstraction (Anthropic, OpenAI, ZordMind)
 ├── commands/
-│   └── update.ts         Update / data refresh command
+│   └── update.ts         Update pipeline — BM25 + schema-aware link scoring
 ├── tools/
 │   ├── crawl.ts          Crawl4AI HTTP client
 │   ├── serp.ts           SerpAPI Google search
 │   ├── records.ts        SQLite CRUD + deduplication
 │   └── csv.ts            CSV export
 └── server/
-    ├── index.ts          Fastify REST API
+    ├── index.ts          Fastify REST API (jobs, schemas, outputs, chat)
     ├── jobs.ts           Job lifecycle + SSE streaming
-    ├── runner.ts         Execute jobs with event emission
+    ├── runner.ts         Execute jobs; getLLMClient()
     ├── db.ts             SQLite schema and init
     ├── settings.ts       LLM provider config
     └── schema-store.ts   Schema CRUD
@@ -87,19 +87,20 @@ src/
 schemas/
 └── 3a-konto.ts           Example: Swiss Säule 3a accounts
 
-ui/
-└── src/
-    ├── App.svelte         Screen router (Monitor / Scrape)
-    ├── stores/
-    │   ├── jobs.svelte.ts     Global job list
-    │   └── dashboard.svelte.ts  Live agent state + token tracking
-    └── components/
-        ├── MonitorScreen.svelte  Agent activity dashboard
-        ├── ScrapeScreen.svelte   Forms + datasets
-        ├── Header.svelte         Running job indicator
-        └── modals/
-            ├── SettingsModal.svelte  LLM provider + model config
-            └── SchemaModal.svelte    Schema editor
+ui/src/
+├── App.svelte            Screen router + cross-screen dataset navigation
+├── stores/
+│   ├── jobs.svelte.ts        Global job list
+│   └── dashboard.svelte.ts   Live agent state + navTarget
+└── components/
+    ├── MonitorScreen.svelte  Job selector bar + dashboard panels + chat
+    ├── ScrapeScreen.svelte   Sidebar (datasets + schemas) + records + panels
+    ├── RecordsTab.svelte     Records table with duplicate group headers
+    ├── ChatPanel.svelte      Q&A assistant (scoped to Scrappy)
+    ├── DashPanel.svelte      Reusable panel with color theming
+    └── modals/
+        ├── SettingsModal.svelte  LLM provider + model config
+        └── SchemaModal.svelte    Schema editor (4-section form)
 ```
 
 ---
@@ -178,17 +179,21 @@ PORT=3000
 ### Web UI (recommended)
 
 ```bash
+# Production (serves built UI from /public)
 npm run server
+
+# Development (hot reload on both server and UI)
+npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3000](http://localhost:3000) (production) or [http://localhost:5173](http://localhost:5173) (dev).
 
 From the **Scrape** screen:
-1. Create or select a schema
-2. Enter a topic and start an Index job
-3. Switch to the **Monitor** screen to watch the agent work in real time
+1. Create or select a schema (sidebar bottom)
+2. Click `+ Index`, enter a topic, and start the job
+3. Switch to **Monitor** to watch the agent in real time
 
-To refresh existing data: go to Scrape → select a dataset → run Update.
+To refresh existing data: click `↻` next to any dataset in the sidebar.
 
 ### CLI
 

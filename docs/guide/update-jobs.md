@@ -31,9 +31,11 @@ If still no result, outbound links from the page are scored by relevance and the
 | Signal | Score |
 |---|---|
 | `.pdf` extension | +3 |
-| URL path contains relevant keywords (`zins`, `rate`, `tarif`, `prix`, `rendement`, `kondition`, `preis`) | +2 |
-| Anchor text contains relevant keywords | +2 |
+| URL path matches schema keywords (field names, tracked fields, field descriptions) | +2 |
+| Anchor text matches schema keywords | +2 |
 | No path-level keyword signal | ×0.5 |
+
+Keywords are derived from the schema — field names, tracked field names, and words from field descriptions. This means the scoring is fully generic: a gym pricing schema scores links containing "preis" or "abo", while a pension schema scores links containing "rendite" or "vorsorge", based on whatever fields you've defined.
 
 The top 5 scoring links are tried. PDFs are downloaded and parsed directly (with TLS fallback for Swiss CA certificates). HTML pages are scraped via Crawl4AI.
 
@@ -65,7 +67,7 @@ Changed rows get a new `_lastUpdated` timestamp.
 
 ## UI
 
-Start an update job from the **Scrape → Update** tab. Select the dataset, schema, and an optional filter, then click **↻ Run**. The monitor view shows updated rows in real time (green = value changed).
+In the Scrape screen, click `↻` next to any dataset in the sidebar. The Update panel opens with the schema auto-selected from the most recent job that used that dataset. Set an optional filter and click **↻ Run**. The monitor view shows updated rows in real time (green = value changed). Click any updated row in the monitor to jump back to that dataset.
 
 ## Requirements
 

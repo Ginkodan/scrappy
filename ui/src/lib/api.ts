@@ -119,3 +119,20 @@ export async function saveSettings(body: Settings): Promise<Response> {
     body: JSON.stringify(body),
   });
 }
+
+export async function sendChat(
+  message: string,
+  jobId?: string,
+  history?: Array<{ role: 'user' | 'assistant'; content: string }>
+): Promise<{ reply?: string; error?: string }> {
+  const res = await fetch('/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, jobId, history }),
+  });
+  try {
+    return await res.json();
+  } catch {
+    return { error: `Server error (${res.status} ${res.statusText})` };
+  }
+}

@@ -87,24 +87,53 @@ export async function runUpdate(
     return links;
   }
 
-  // Score a link by how likely it leads to rate data.
+  // Split camelCase/snake_case into individual words
+  function splitIdentifier(s: string): string[] {
+    return s.replace(/([A-Z])/g, " $1").toLowerCase().split(/[\s_-]+/).filter(Boolean);
+  }
+
+  // Build a keyword regex from the schema: rateFields, field names, dedupeKey, field descriptions
+  function buildSchemaKeywordRe(): RegExp | null {
+    const STOP = new Set(["name", "value", "field", "data", "info", "page", "item", "list",
+      "type", "date", "time", "text", "link", "from", "with", "that", "this", "have",
+      "will", "been", "they", "their", "url", "the", "and", "for", "per"]);
+    const words = new Set<string>();
+
+    // rateFields are the strongest hint — they're literally what we're looking for
+    for (const f of schemaDef.rateFields) {
+      splitIdentifier(f).forEach(w => { if (w.length >= 3 && !STOP.has(w)) words.add(w); });
+    }
+    // field names and dedupe keys
+    for (const f of [...Object.keys(schemaDef.fieldDescriptions), ...schemaDef.dedupeKey]) {
+      splitIdentifier(f).forEach(w => { if (w.length >= 4 && !STOP.has(w)) words.add(w); });
+    }
+    // meaningful words from field descriptions
+    for (const desc of Object.values(schemaDef.fieldDescriptions)) {
+      desc.split(/\W+/).forEach(w => { if (w.length >= 5 && !STOP.has(w.toLowerCase())) words.add(w.toLowerCase()); });
+    }
+
+    return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
+  }
+
+  const schemaKeywordRe = buildSchemaKeywordRe();
+
+  // Score a link by how likely it leads to relevant data.
   // URL path keywords are a strong signal; anchor text alone is weak (navigation menus
-  // often contain "Vorsorge" / "Rendite" in text but link to generic landing pages).
+  // often contain field-relevant terms but link to generic landing pages).
   function rateLinkScore(link: PageLink): number {
     let score = 0;
     let hasPathSignal = false;
     try {
       const path = new URL(link.url).pathname.toLowerCase();
       if (path.endsWith(".pdf")) { score += 3; hasPathSignal = true; }
-      if (/zins|kondition|tarif|vorsorg|preise|ertrag|spar/i.test(path)) { score += 2; hasPathSignal = true; }
+      if (schemaKeywordRe?.test(path)) { score += 2; hasPathSignal = true; }
     } catch { /* skip */ }
     const text = link.text.toLowerCase();
-    if (/zins|kondition|tarif|rendite|vorsorg|preise|ertrag|spar|konto/i.test(text)) score += 2;
-    if (/pdf|dokument|download/i.test(text)) score += 1;
-    // Anchor-text-only links are weaker (nav menus often have "Vorsorge"/"Rendite" text
-    // but link to generic landing pages). Still allow them but at a lower effective score.
+    if (schemaKeywordRe?.test(text)) score += 2;
+    if (/pdf|document|download|dokument/i.test(text)) score += 1;
+    // Anchor-text-only links are weaker (nav menus often have relevant terms
+    // but link to generic landing pages). Still allow them at a lower effective score.
     return hasPathSignal ? score : Math.floor(score / 2);
-
   }
 
   async function fetchPdf(url: string, referer?: string): Promise<string> {

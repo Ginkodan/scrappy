@@ -13,6 +13,10 @@ const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
 const OPENAI_API_KEY = process.env.OPENAI_KEY ?? "";
 const SERPAPI_KEY = process.env.SERPAPI_KEY ?? "";
 
+export function getLLMClient() {
+  return makeLLMClient();
+}
+
 function makeLLMClient() {
   const settings = readSettings();
   if (settings.llmProvider === "openai") {

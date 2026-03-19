@@ -35,7 +35,7 @@ Keeps existing records up to date without a full re-index. Each record goes thro
 
 **Stage 2 — Full crawl.** If BM25 returned nothing useful, the full page is fetched (no filter). This discovers additional links from JS-rendered content and custom HTML elements (e.g. web components). Claude Haiku tries again.
 
-**Stage 3 — Follow promising links.** If still no result, outbound links are scored by relevance (PDFs score highest, URL path keywords and anchor text add to the score). The top candidates are scraped individually. PDFs are downloaded and parsed directly.
+**Stage 3 — Follow promising links.** If still no result, outbound links are scored by relevance. PDFs score highest; URL path and anchor text are matched against keywords derived from the schema's field names and descriptions (not hardcoded). The top candidates are scraped individually. PDFs are downloaded and parsed directly.
 
 Records with a comparison-site URL first go through a Google SERP search to find the official provider URL before entering the pipeline.
 

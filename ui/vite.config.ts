@@ -9,6 +9,7 @@ export default defineConfig({
       '/schemas': 'http://localhost:3000',
       '/settings': 'http://localhost:3000',
       '/outputs': 'http://localhost:3000',
+      '/chat': 'http://localhost:3000',
     },
   },
   build: {

@@ -6,6 +6,7 @@
   import RawLog from './RawLog.svelte';
   import { shortUrl, fmtK, timeAgo } from '../lib/format';
   import { cancelJob } from '../lib/api';
+  import ChatPanel from './ChatPanel.svelte';
 
   const s = $derived(dashStore.state);
   const activeScrapesList = $derived([...s.activeScrapes.values()]);
@@ -71,6 +72,10 @@
 <div class="action-ticker" class:idle={dashStore.state.job?.status !== 'running'}>
   <span class="ticker-dot" class:active={dashStore.state.job?.status === 'running'}></span>
   <span class="ticker-text">{dashStore.currentAction}<span class="ticker-cursor" class:active={dashStore.state.job?.status === 'running'}>▋</span></span>
+</div>
+
+<div style="margin-bottom:0.75rem">
+  <ChatPanel jobId={dashStore.state.job?.id} />
 </div>
 
 <div class="monitor-grid">

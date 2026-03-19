@@ -5,7 +5,7 @@ import { timingSafeEqual, randomBytes } from "crypto";
 import { resolve } from "path";
 import { createJob, getJob, listJobs, getJobEvents, type Job } from "./jobs.js";
 import { dbClearJobs } from "./db.js";
-import { listSchemas, listOutputs, runIndexJob, runUpdateJob } from "./runner.js";
+import { listSchemas, listOutputs, runIndexJob, runUpdateJob, getLLMClient } from "./runner.js";
 import { readSettings, writeSettings } from "./settings.js";
 import { db } from "./db.js";
 import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate } from "../tools/records.js";
@@ -296,6 +296,75 @@ app.get("/outputs/:dataset/records", async (req, reply) => {
   if (total === 0) return { headers: [], rows: [], total: 0, limit: 200, offset: 0 };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
   return { headers, rows, total, limit: q.limit ? parseInt(q.limit, 10) : 200, offset: q.offset ? parseInt(q.offset, 10) : 0 };
+});
+
+// --- chat ---
+app.post("/chat", async (req, reply) => {
+  try {
+    const body = req.body as { message?: string; jobId?: string; history?: Array<{ role: "user" | "assistant"; content: string }> } | null;
+    const message = body?.message ?? "";
+    const jobId = body?.jobId;
+    const history = body?.history ?? [];
+
+    if (!message.trim()) return reply.code(400).send({ error: "message required" });
+
+    const schemas = listSchemas();
+    const datasets = listOutputs();
+
+    let jobContext = "";
+    if (jobId) {
+      const events = getJobEvents(jobId).slice(-60);
+      jobContext = "\n\nRecent job events:\n" + events
+        .map(e => `[${e.ts}] ${e.type}: ${JSON.stringify(e.payload)}`)
+        .join("\n");
+    }
+
+    const schemaDetails = schemas.map(s => {
+      try {
+        const row = db.prepare("SELECT fields, rate_fields, dedupe_key FROM schemas WHERE id = ?").get(s.id) as { fields: string; rate_fields: string; dedupe_key: string } | undefined;
+        if (!row) return `- ${s.display_name} (id: ${s.id})`;
+        const fields = (JSON.parse(row.fields) as { name: string; description: string }[]).map(f => f.name).join(", ");
+        const rateFields = JSON.parse(row.rate_fields || "[]") as string[];
+        const dedupeKey = JSON.parse(row.dedupe_key || "[]") as string[];
+        return `- ${s.display_name} (id: ${s.id}, fields: ${fields}, tracked: ${rateFields.join(", ") || "none"}, dedupe: ${dedupeKey.join(", ") || "none"})`;
+      } catch { return `- ${s.display_name} (id: ${s.id})`; }
+    }).join("\n");
+
+    const system = `You are a focused assistant embedded in Scrappy, an AI-powered web scraping and data indexing tool. You help users with this specific tool only.
+
+You ONLY answer questions about:
+- Scrappy itself: schemas, datasets, index jobs, update jobs, deduplication, tracked fields
+- Diagnosing why a job failed or found no results (use the job events)
+- Suggesting schema improvements (fields, dedupe keys, tracked fields, naming rules)
+- Understanding the data in a dataset
+
+You MUST refuse any request outside this scope — including coding help, building other apps, general AI questions, or anything unrelated to Scrappy. For off-topic requests, respond with a single short sentence explaining you only assist with Scrappy.
+
+Available schemas:\n${schemaDetails || "(none)"}
+
+Available datasets: ${datasets.join(", ") || "(none)"}${jobContext}
+
+Be concise and practical. If the user asks why something failed, look at the job events for clues.`;
+
+    const llm = getLLMClient();
+    const messages = [
+      ...history.map(h => ({ role: h.role as "user" | "assistant", content: h.content })),
+      { role: "user" as const, content: message },
+    ];
+    const response = await llm.messages.create({
+      model: llm.extractModel,
+      max_tokens: 1024,
+      system,
+      messages,
+    });
+    const text = response.content
+      .filter(b => b.type === "text")
+      .map(b => (b as { type: "text"; text: string }).text)
+      .join("");
+    return { reply: text };
+  } catch (e) {
+    return reply.code(500).send({ error: String(e) });
+  }
 });
 
 await seedSchemasFromFiles(db);

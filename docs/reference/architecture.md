@@ -10,7 +10,8 @@
                          │ REST + SSE
 ┌────────────────────────▼────────────────────────────────┐
 │                    Fastify Server                         │
-│  /jobs  /schemas  /outputs  /settings  /jobs/:id/stream  │
+│  /jobs  /schemas  /outputs  /settings  /chat             │
+│  /jobs/:id/stream                                        │
 └──────────┬─────────────────────────┬────────────────────┘
            │                         │
 ┌──────────▼──────────┐   ┌─────────▼──────────────┐
@@ -34,19 +35,34 @@ src/
 │   ├── loop.ts           Agent loop + tool definitions + system prompt
 │   └── llm-client.ts     LLM abstraction (Anthropic / OpenAI / ZordMind)
 ├── commands/
-│   └── update.ts         Update — BM25 scrape + Haiku extraction
+│   └── update.ts         Update — BM25 scrape + schema-aware link scoring + Haiku extraction
 ├── tools/
 │   ├── crawl.ts          Crawl4AI /crawl client (index agent)
 │   ├── serp.ts           SerpAPI Google search
 │   ├── records.ts        SQLite CRUD + deduplication
 │   └── csv.ts            CSV export
 └── server/
-    ├── index.ts          Fastify REST API
+    ├── index.ts          Fastify REST API (includes /chat endpoint)
     ├── jobs.ts           Job lifecycle + SSE event streaming
-    ├── runner.ts         Execute index/update jobs
+    ├── runner.ts         Execute index/update jobs; getLLMClient()
     ├── db.ts             SQLite init and queries
     ├── settings.ts       LLM provider config (data/settings.json)
     └── schema-store.ts   Schema CRUD
+
+ui/src/
+├── App.svelte            Screen router (Monitor / Scrape) + cross-screen navigation
+├── stores/
+│   ├── jobs.svelte.ts        Global job list
+│   └── dashboard.svelte.ts   Live agent state + navTarget for dataset navigation
+└── components/
+    ├── MonitorScreen.svelte  Job selector bar + agent dashboard + chat
+    ├── ScrapeScreen.svelte   Sidebar (datasets + schemas) + records + action panels
+    ├── RecordsTab.svelte     Records table with duplicate group headers
+    ├── ChatPanel.svelte      Q&A chat assistant (scoped to Scrappy)
+    ├── DashPanel.svelte      Reusable panel with color theming
+    └── modals/
+        ├── SettingsModal.svelte  LLM provider + model config
+        └── SchemaModal.svelte    Schema editor (4-section form)
 ```
 
 ## Database
