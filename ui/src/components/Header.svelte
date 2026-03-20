@@ -7,8 +7,8 @@
     onScreenChange,
     onOpenSettings,
   }: {
-    screen: 'monitor' | 'scrape';
-    onScreenChange: (s: 'monitor' | 'scrape') => void;
+    screen: 'monitor' | 'scrape' | 'datasets';
+    onScreenChange: (s: 'monitor' | 'scrape' | 'datasets') => void;
     onOpenSettings: () => void;
   } = $props();
 
@@ -31,6 +31,7 @@
     <nav class="app-nav">
       <button class="nav-link" class:active={screen === 'monitor'} onclick={() => onScreenChange('monitor')}>Monitor</button>
       <button class="nav-link" class:active={screen === 'scrape'} onclick={() => onScreenChange('scrape')}>Scrape</button>
+      <button class="nav-link" class:active={screen === 'datasets'} onclick={() => onScreenChange('datasets')}>Datasets</button>
     </nav>
     {#if runningLabel}
       <div class="running-indicator" title={runningLabel}>

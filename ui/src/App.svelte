@@ -2,13 +2,14 @@
   import Header from './components/Header.svelte';
   import MonitorScreen from './components/MonitorScreen.svelte';
   import ScrapeScreen from './components/ScrapeScreen.svelte';
+  import DatasetsScreen from './components/DatasetsScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
   import { jobsStore } from './stores/jobs.svelte';
   import { dashStore } from './stores/dashboard.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
 
-  let screen = $state<'monitor' | 'scrape'>('monitor');
+  let screen = $state<'monitor' | 'scrape' | 'datasets'>('monitor');
   let scrapeInitialDataset = $state<string | null>(null);
 
   $effect(() => {
@@ -55,6 +56,8 @@
 
 {#if screen === 'monitor'}
   <MonitorScreen />
+{:else if screen === 'datasets'}
+  <DatasetsScreen {outputs} />
 {:else}
   <ScrapeScreen
     {schemas}
