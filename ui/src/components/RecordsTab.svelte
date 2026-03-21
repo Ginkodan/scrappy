@@ -104,9 +104,9 @@
           mergeKeepId = Number((rows[winnerIdx] as Record<string, string>)['_id']);
           mergeRemoveIds = removeIdxs.map(i => Number((rows[i] as Record<string, string>)['_id']));
           mergeConfidence = rowScore >= 1 ? 'exact' : rowScore >= 0.75 ? 'likely' : 'possible';
-          mergeBtnColor = rowScore >= 1 ? '#4caf50' : rowScore >= 0.75 ? '#ffb74d' : '#888';
-          mergeBtnBg = rowScore >= 1 ? '#1a2a1a' : rowScore >= 0.75 ? '#2a1f0a' : '#1a1a1a';
-          mergeBtnBorder = rowScore >= 1 ? '#2a4a2a' : rowScore >= 0.75 ? '#4a3a0a' : '#333';
+          mergeBtnColor = rowScore >= 1 ? '#16a34a' : rowScore >= 0.75 ? '#d97706' : '#6b6860';
+          mergeBtnBg = rowScore >= 1 ? '#f0fdf4' : rowScore >= 0.75 ? '#fffbeb' : '#f5f3ee';
+          mergeBtnBorder = rowScore >= 1 ? '#bbf7d0' : rowScore >= 0.75 ? '#fde68a' : '#e8e6e0';
         }
 
         prevGroupId = gid ?? -2;
@@ -259,24 +259,26 @@
     display: flex;
     align-items: baseline;
     gap: 0.6rem;
-    margin-bottom: 0.5rem;
     font-family: "IBM Plex Mono", monospace;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: #faf9f6;
+    border-bottom: 1px solid #e8e6e0;
   }
-  .records-meta-count { color: #d8d8d8; font-weight: 600; }
-  .records-meta-label { color: #888; font-weight: 400; }
+  .records-meta-count { color: #0e0d0b; font-weight: 600; }
+  .records-meta-label { color: #6b6860; font-weight: 400; }
   .records-meta-file {
-    color: #777;
+    color: #6b6860;
     padding-left: 0.4rem;
-    border-left: 1px solid #2a2a2a;
+    border-left: 1px solid #e8e6e0;
   }
-  .records-meta-dup { color: #f59e0b; }
+  .records-meta-dup { color: #d97706; }
 
   /* Duplicate group header row */
   .dup-group-header td {
     padding: 0.4rem 0.55rem 0.35rem !important;
-    background: color-mix(in srgb, var(--group-color) 6%, #0d0d0d) !important;
-    border-top: 1px solid color-mix(in srgb, var(--group-color) 20%, transparent);
+    background: color-mix(in srgb, var(--group-color) 8%, #fff) !important;
+    border-top: 1px solid color-mix(in srgb, var(--group-color) 25%, transparent);
     border-bottom: none !important;
   }
   .dup-header-inner {
@@ -294,13 +296,13 @@
     border-radius: 2px;
     flex-shrink: 0;
   }
-  .dup-conf-badge.exact   { background: #0d2a0d; color: #4caf50; border: 1px solid #1a4a1a; }
-  .dup-conf-badge.likely  { background: #2a1e08; color: #f59e0b; border: 1px solid #4a350a; }
-  .dup-conf-badge.possible { background: #1a1a1a; color: #888; border: 1px solid #333; }
+  .dup-conf-badge.exact   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .dup-conf-badge.likely  { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+  .dup-conf-badge.possible { background: #f5f3ee; color: #9b9892; border: 1px solid #e8e6e0; }
 
   .dup-group-desc {
     font-size: 0.72rem;
-    color: #888;
+    color: #9b9892;
     flex-shrink: 0;
   }
   .dup-score-inline {
@@ -328,15 +330,15 @@
     transition: opacity 0.15s;
   }
   .dup-action-btn:hover { opacity: 0.8; }
-  .dup-action-btn.merge.exact   { color: #4caf50; background: #0d2a0d; border-color: #2a5a2a; }
-  .dup-action-btn.merge.likely  { color: #f59e0b; background: #2a1e08; border-color: #5a3a08; }
-  .dup-action-btn.merge.possible { color: #aaa; background: #1a1a1a; border-color: #3a3a3a; }
-  .dup-action-btn.dismiss { color: #888; background: #111; border-color: #333; }
-  .dup-action-btn.dismiss:hover { color: #aaa; opacity: 1; border-color: #444; }
+  .dup-action-btn.merge.exact   { color: #16a34a; background: #f0fdf4; border-color: #bbf7d0; }
+  .dup-action-btn.merge.likely  { color: #d97706; background: #fffbeb; border-color: #fde68a; }
+  .dup-action-btn.merge.possible { color: #6b6860; background: #f5f3ee; border-color: #e8e6e0; }
+  .dup-action-btn.dismiss { color: #9b9892; background: #f5f3ee; border-color: #e8e6e0; }
+  .dup-action-btn.dismiss:hover { color: #0e0d0b; opacity: 1; border-color: #d0cec8; }
 
   /* Row group coloring */
   .data-row.in-group td {
-    background: color-mix(in srgb, var(--group-color) 3%, transparent);
+    background: color-mix(in srgb, var(--group-color) 5%, #fff);
   }
   .data-row.in-group td:first-child {
     box-shadow: inset 2px 0 0 var(--group-color);
@@ -352,6 +354,6 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
   }
-  .source-badge.official   { background: #0a2018; color: #34d399; }
-  .source-badge.comparison { background: #1e1508; color: #f59e0b; }
+  .source-badge.official   { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+  .source-badge.comparison { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
 </style>

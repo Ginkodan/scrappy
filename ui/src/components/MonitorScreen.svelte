@@ -139,7 +139,7 @@
         >
           <span class="p-indicator {r.changed ? 'extract' : 'done'}">✓</span>
           <span class="p-main">{r.provider}</span>
-          <span class="p-meta" style={r.changed ? 'color:#4caf50' : ''}>{r.changed ? 'CHANGED' : 'same'} · {r.ts}</span>
+          <span class="p-meta" style={r.changed ? 'color:#16a34a' : ''}>{r.changed ? 'CHANGED' : 'same'} · {r.ts}</span>
           {#if r.dataset}<span class="update-row-ds">→</span>{/if}
         </div>
       {/each}
@@ -202,10 +202,10 @@
     {:else}
       {#each [...s.errors].reverse() as err}
         <div class="p-row" style="flex-direction:column;align-items:flex-start;gap:0.1rem;padding:0.3rem 0">
-          <span style="color:#f44336;font-size:0.7rem;word-break:break-all;overflow-wrap:anywhere">
+          <span style="color:#dc2626;font-size:0.7rem;word-break:break-all;overflow-wrap:anywhere">
             {err.tool ? `[${err.tool}] ` : ''}{err.message}
           </span>
-          <span style="color:#888;font-size:0.62rem">{err.ts}</span>
+          <span style="color:#9b9892;font-size:0.62rem">{err.ts}</span>
         </div>
       {/each}
     {/if}
@@ -224,36 +224,36 @@
     gap: 0.6rem;
     padding: 0.5rem 0.85rem;
     margin-bottom: 0.75rem;
-    background: #111a11;
-    border: 1px solid #1a2a1a;
-    border-left: 2px solid #4caf50;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-left: 3px solid #16a34a;
     border-radius: 4px;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
     font-size: 0.8rem;
-    color: #7fcf7f;
+    color: #15803d;
     min-width: 0;
     transition: color 0.3s, border-color 0.3s, background 0.3s;
   }
   .action-ticker.idle {
-    color: #7a9a7a;
-    border-color: #1a1a1a;
-    border-left-color: #3a4a3a;
-    background: #161616;
+    color: #9b9892;
+    border-color: #e8e6e0;
+    border-left-color: #d0cec8;
+    background: #fafaf9;
   }
   .ticker-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: #2a3a2a;
+    background: #d0cec8;
     flex-shrink: 0;
     margin-top: 0.35rem;
   }
   .ticker-dot.active {
-    background: #4caf50;
+    background: #16a34a;
     animation: ticker-pulse 1.4s ease-in-out infinite;
   }
   @keyframes ticker-pulse {
-    0%, 100% { opacity: 1; box-shadow: 0 0 4px #4caf50; }
+    0%, 100% { opacity: 1; box-shadow: 0 0 4px #16a34a; }
     50% { opacity: 0.4; box-shadow: none; }
   }
   .ticker-text {
@@ -284,8 +284,8 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
-    background: #181818;
-    border: 1px solid #1e1e1e;
+    background: #fff;
+    border: 1px solid #e8e6e0;
     border-radius: 4px;
     min-width: 0;
   }
@@ -295,13 +295,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #777;
+    color: #9b9892;
     flex-shrink: 0;
   }
   .job-selector-empty {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.72rem;
-    color: #666;
+    color: #9b9892;
   }
   .job-chips {
     display: flex;
@@ -322,68 +322,68 @@
     gap: 0.35rem;
     padding: 0.22rem 0.5rem;
     border-radius: 3px;
-    border: 1px solid #1e1e1e;
-    background: #1e1e1e;
+    border: 1px solid #e8e6e0;
+    background: #f5f3ee;
     white-space: nowrap;
     flex-shrink: 0;
     transition: border-color 0.15s, background 0.15s;
     font-family: "IBM Plex Mono", monospace;
   }
-  .job-chip:hover { border-color: #333; background: #252525; }
+  .job-chip:hover { border-color: #d0cec8; background: #eceae4; }
   .job-chip.selected {
     border-color: #22d3ee;
-    background: #0a2028;
+    background: #ecfeff;
   }
   .job-chip.selected.running {
-    border-color: #4caf50;
-    background: #0d1a0d;
+    border-color: #16a34a;
+    background: #f0fdf4;
   }
 
   .job-chip-dot {
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: #333;
+    background: #d0cec8;
     flex-shrink: 0;
   }
-  .job-chip-dot.running { background: #4caf50; animation: ticker-pulse 1.4s ease-in-out infinite; }
+  .job-chip-dot.running { background: #16a34a; animation: ticker-pulse 1.4s ease-in-out infinite; }
   .job-chip-dot.done    { background: #22d3ee; }
-  .job-chip-dot.failed  { background: #f44336; }
+  .job-chip-dot.failed  { background: #dc2626; }
 
   .job-chip-label {
     font-size: 0.75rem;
-    color: #aaa;
+    color: #6b6860;
     max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.15s;
   }
-  .job-chip.selected .job-chip-label { color: #e0e0e0; }
-  .job-chip:hover .job-chip-label { color: #ccc; }
+  .job-chip.selected .job-chip-label { color: #0e0d0b; }
+  .job-chip:hover .job-chip-label { color: #0e0d0b; }
 
   .job-chip-age {
     font-size: 0.67rem;
-    color: #666;
+    color: #9b9892;
     flex-shrink: 0;
   }
-  .job-chip.selected .job-chip-age { color: #888; }
+  .job-chip.selected .job-chip-age { color: #6b6860; }
 
   .job-chip-cancel {
     all: unset;
     cursor: pointer;
-    color: #555;
+    color: #9b9892;
     font-size: 0.8rem;
     line-height: 1;
     flex-shrink: 0;
     padding: 0 0.1rem;
     transition: color 0.12s;
   }
-  .job-chip-cancel:hover { color: #f44336; }
+  .job-chip-cancel:hover { color: #dc2626; }
 
   .job-chip-more {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.67rem;
-    color: #666;
+    color: #9b9892;
     flex-shrink: 0;
     padding: 0 0.2rem;
   }
@@ -393,12 +393,12 @@
     cursor: pointer;
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.67rem;
-    color: #666;
+    color: #9b9892;
     flex-shrink: 0;
     transition: color 0.15s;
     margin-left: auto;
   }
-  .job-clear-btn:hover { color: #ef5350; }
+  .job-clear-btn:hover { color: #dc2626; }
 
   .monitor-grid {
     display: grid;
@@ -415,7 +415,7 @@
   .update-row-link {
     cursor: pointer;
   }
-  .update-row-link:hover .p-main { color: #22d3ee; }
+  .update-row-link:hover .p-main { color: #0e7490; }
   .update-row-ds {
     font-size: 0.65rem;
     color: #22d3ee;

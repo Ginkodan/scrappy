@@ -63,7 +63,6 @@
 
 <Header
   {screen}
-  theme={screen === 'datasets' ? 'light' : 'dark'}
   onScreenChange={(s) => { navigate(s); }}
   onOpenSettings={() => { settingsOpen = true; }}
 />

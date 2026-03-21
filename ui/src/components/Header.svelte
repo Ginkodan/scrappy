@@ -4,12 +4,10 @@
 
   const {
     screen,
-    theme = 'dark',
     onScreenChange,
     onOpenSettings,
   }: {
     screen: 'monitor' | 'datasets';
-    theme?: 'dark' | 'light';
     onScreenChange: (s: 'monitor' | 'datasets') => void;
     onOpenSettings: () => void;
   } = $props();
@@ -24,10 +22,10 @@
   );
 </script>
 
-<div class="app-header" class:app-header--light={theme === 'light'}>
+<div class="app-header">
   <div style="display:flex;align-items:center;gap:1.5rem">
     <div class="brand">
-      <BotIcon size={18} color="#00bcd4" strokeWidth={1.75} />
+      <BotIcon size={18} color="#22d3ee" strokeWidth={1.75} />
       <h1>scrappy</h1>
     </div>
     <nav class="app-nav">
@@ -55,13 +53,13 @@
   }
   .docs-link {
     font-size: 0.8rem;
-    color: #aaa;
+    color: #9b9892;
     text-decoration: underline;
     text-underline-offset: 3px;
     font-family: monospace;
     transition: color 0.15s;
   }
-  .docs-link:hover { color: #fff; }
+  .docs-link:hover { color: #0e0d0b; }
 
   .app-nav {
     display: flex;
@@ -72,13 +70,13 @@
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 500;
-    color: #888;
+    color: #6b6860;
     padding: 0.25rem 0.65rem;
     border-radius: 4px;
     transition: color 0.15s, background 0.15s;
   }
-  .nav-link:hover { color: #aaa; background: #1a1a1a; }
-  .nav-link.active { color: #00bcd4; background: #0a2a2a; }
+  .nav-link:hover { color: #0e0d0b; background: #ece9e3; }
+  .nav-link.active { color: #0e7490; background: #ecfeff; }
 
   .running-indicator {
     display: flex;
@@ -90,31 +88,23 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
-    background: #4caf50;
-    box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5);
+    background: #16a34a;
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
     animation: pulse 1.4s ease-in-out infinite;
     flex-shrink: 0;
   }
   @keyframes pulse {
-    0%   { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.5); }
-    70%  { box-shadow: 0 0 0 6px rgba(76, 175, 80, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0); }
+    0%   { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+    70%  { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
   }
   .running-label {
     font-size: 0.72rem;
-    color: #4caf50;
+    color: #16a34a;
     font-family: monospace;
     max-width: 260px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
-
-  /* Light theme nav overrides — background handled globally in app.css */
-  :global(.app-header--light) .nav-link { color: #6b6860; }
-  :global(.app-header--light) .nav-link:hover { color: #0e0d0b; background: #ece9e3; }
-  :global(.app-header--light) .nav-link.active { color: #0e7490; background: #cffafe; }
-  :global(.app-header--light) .docs-link { color: #9b9892; }
-  :global(.app-header--light) .docs-link:hover { color: #0e0d0b; }
-  :global(.app-header--light) .running-label { color: #16a34a; }
 </style>

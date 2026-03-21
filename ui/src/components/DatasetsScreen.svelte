@@ -293,19 +293,15 @@
 </div>
 
 <style>
-  /* Root — covers body's dark background */
+  /* Root */
   .ds-root {
-    margin: -1.5rem;
-    min-height: calc(100vh - 0px);
-    background: #f5f3ee;
     font-family: 'DM Sans', sans-serif;
   }
 
   .ds-layout {
     display: flex;
-    padding: 1.5rem;
     gap: 1.5rem;
-    min-height: calc(100vh - 60px); /* 60px = nav height */
+    min-height: calc(100vh - 120px); /* account for header + body padding */
     align-items: flex-start;
   }
 
