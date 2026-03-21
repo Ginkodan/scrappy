@@ -3,7 +3,7 @@
   import UpdateTab from './tabs/UpdateTab.svelte';
   import RecordsTab from './RecordsTab.svelte';
   import { dashStore } from '../stores/dashboard.svelte';
-  import { getOutputs, deleteOutput } from '../lib/api';
+  import { getOutputs, deleteOutput, deleteSchema } from '../lib/api';
 
   const {
     schemas,
@@ -62,9 +62,12 @@
 
   async function handleDeleteSchema(id: string) {
     if (!confirm(`Delete schema "${id}"? This cannot be undone.`)) return;
-    const res = await fetch(`/schemas/${id}`, { method: 'DELETE' });
-    const data = await res.json() as { error?: string };
-    if (!res.ok) { alert(data.error); return; }
+    try {
+      await deleteSchema(id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+      return;
+    }
     onSelectsReload();
   }
 

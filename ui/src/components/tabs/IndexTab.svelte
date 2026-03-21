@@ -42,7 +42,7 @@
       topic: topic.trim(),
       schema: selectedSchema,
       output: cleanOutput,
-      ...(maxIter ? { maxIterations: String(maxIter) } : {}),
+      ...(maxIter ? { maxIterations: Number(maxIter) } : {}),
       ...(cleanSeedUrls ? { seedUrls: cleanSeedUrls } : {}),
     });
     loading = false;

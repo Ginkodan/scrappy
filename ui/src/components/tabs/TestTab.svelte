@@ -97,7 +97,7 @@
       topic: tc.topic,
       schema: selectedSchema,
       output: tc.output,
-      maxIterations: maxIter.trim() || '20',
+      maxIterations: Number(maxIter.trim() || '20'),
       ...(tc.seedUrls ? { seedUrls: tc.seedUrls } : {}),
     });
 

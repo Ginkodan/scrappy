@@ -65,7 +65,7 @@
   async function startIndex() {
     if (!indexTopic || !indexSchema || !indexOutput) return;
     submitting = true;
-    const res = await startIndexJob({ topic: indexTopic, schema: indexSchema, output: indexOutput, maxIterations: String(indexIterations) });
+    const res = await startIndexJob({ topic: indexTopic, schema: indexSchema, output: indexOutput, maxIterations: indexIterations });
     submitting = false;
     if (res.id) {
       jobStatus = { id: res.id, type: 'index', status: 'running' };
