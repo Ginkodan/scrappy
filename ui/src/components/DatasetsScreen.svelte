@@ -1,16 +1,27 @@
 <script lang="ts">
-  import { getRecords, startIndexJob, startUpdateJob, sendChat } from '../lib/api';
+  import { startIndexJob, startUpdateJob, sendChat, getOutputs, deleteOutput, deleteSchema } from '../lib/api';
+  import { jobsStore } from '../stores/jobs.svelte';
+  import RecordsTab from './RecordsTab.svelte';
 
-  const { outputs, schemas }: {
+  const {
+    outputs: initialOutputs,
+    schemas,
+    onSchemaEdit,
+    onNewSchema,
+    onSelectsReload,
+  }: {
     outputs: string[];
     schemas: Array<{ id: string; display_name: string }>;
+    onSchemaEdit: (id: string) => void;
+    onNewSchema: () => void;
+    onSelectsReload: () => void;
   } = $props();
 
-  let selectedDataset = $state<string | null>(outputs[0] ?? null);
-  let headers = $state<string[]>([]);
-  let rows = $state<Record<string, unknown>[]>([]);
-  let loading = $state(false);
-  let error = $state<string | null>(null);
+  let datasets = $state<string[]>(initialOutputs);
+  let selectedDataset = $state<string | null>(initialOutputs[0] ?? null);
+  let recordsTick = $state(0);
+
+  $effect(() => { datasets = initialOutputs; });
 
   let activePanel = $state<'index' | 'update' | null>(null);
   let indexTopic = $state('');
@@ -20,7 +31,6 @@
   let updateSchema = $state('');
   let updateFilter = $state('');
   let submitting = $state(false);
-  let jobStatus = $state<{ id: string; type: string; status: string } | null>(null);
   let chatHistory = $state<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   let chatInput = $state('');
   let chatLoading = $state(false);
@@ -31,57 +41,57 @@
     }
   });
 
-  function cellClass(h: string): string {
-    if (h === '_dataSource') return 'col-source';
-    if (h === '_lastUpdated') return 'col-date';
-    if (h.startsWith('_')) return 'col-system';
-    return 'col-data';
-  }
+  const activeJob = $derived(
+    jobsStore.jobs.find(j =>
+      j.status === 'running' &&
+      (j.params.output === selectedDataset || j.params.input === selectedDataset)
+    ) ?? null
+  );
 
-  function rowClass(row: Record<string, unknown>): string {
-    const src = String(row['_dataSource'] ?? '');
-    if (src === 'comparison') return 'row-changed';
-    return '';
+  async function refreshDatasets() {
+    const { outputs } = await getOutputs();
+    datasets = outputs;
+    onSelectsReload();
   }
-
-  $effect(() => {
-    if (!selectedDataset) return;
-    loading = true;
-    error = null;
-    getRecords(selectedDataset).then(data => {
-      headers = data.headers ?? [];
-      rows = data.rows ?? [];
-      loading = false;
-    }).catch(e => {
-      error = String(e);
-      loading = false;
-    });
-  });
 
   function handleSelectDataset(name: string) {
     selectedDataset = name;
+    recordsTick++;
+    if (activePanel === 'index') activePanel = null;
+  }
+
+  async function handleDelete(name: string) {
+    if (!confirm(`Delete dataset "${name}"?`)) return;
+    await deleteOutput(name);
+    if (selectedDataset === name) { selectedDataset = null; activePanel = null; }
+    await refreshDatasets();
+  }
+
+  async function handleDeleteSchema(id: string) {
+    if (!confirm(`Delete schema "${id}"? This cannot be undone.`)) return;
+    try {
+      await deleteSchema(id);
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e));
+      return;
+    }
+    onSelectsReload();
   }
 
   async function startIndex() {
     if (!indexTopic || !indexSchema || !indexOutput) return;
     submitting = true;
-    const res = await startIndexJob({ topic: indexTopic, schema: indexSchema, output: indexOutput, maxIterations: indexIterations });
+    await startIndexJob({ topic: indexTopic, schema: indexSchema, output: indexOutput, maxIterations: indexIterations });
     submitting = false;
-    if (res.id) {
-      jobStatus = { id: res.id, type: 'index', status: 'running' };
-      activePanel = null;
-    }
+    activePanel = null;
   }
 
   async function startUpdate() {
     if (!selectedDataset || !updateSchema) return;
     submitting = true;
-    const res = await startUpdateJob({ input: selectedDataset, schema: updateSchema, filter: updateFilter || undefined });
+    await startUpdateJob({ input: selectedDataset, schema: updateSchema, filter: updateFilter || undefined });
     submitting = false;
-    if (res.id) {
-      jobStatus = { id: res.id, type: 'update', status: 'running' };
-      activePanel = null;
-    }
+    activePanel = null;
   }
 
   async function sendChatMsg() {
@@ -90,7 +100,7 @@
     chatInput = '';
     chatHistory = [...chatHistory, { role: 'user', content: msg }];
     chatLoading = true;
-    const res = await sendChat(msg, jobStatus?.id, chatHistory.slice(0, -1));
+    const res = await sendChat(msg, activeJob?.id, chatHistory.slice(0, -1));
     chatHistory = [...chatHistory, { role: 'assistant', content: res.reply ?? res.error ?? 'Error' }];
     chatLoading = false;
   }
@@ -101,11 +111,16 @@
 
     <!-- Sidebar -->
     <aside class="ds-sidebar">
-      <div class="ds-sidebar-header">Datasets</div>
-      {#if outputs.length === 0}
+
+      <!-- Datasets section -->
+      <div class="ds-sidebar-sec-header">
+        <span>Datasets</span>
+        <button class="ds-sb-icon-btn" onclick={refreshDatasets} title="Refresh">↺</button>
+      </div>
+      {#if datasets.length === 0}
         <div class="ds-sidebar-empty">No datasets yet</div>
       {:else}
-        {#each outputs as name (name)}
+        {#each datasets as name (name)}
           <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
           <div
             class="ds-card"
@@ -114,9 +129,39 @@
           >
             <div class="ds-card-icon">{name.slice(0,2).toUpperCase()}</div>
             <div class="ds-card-name">{name}</div>
+            <div class="ds-card-acts">
+              <button
+                class="ds-card-act-btn"
+                onclick={(e) => { e.stopPropagation(); handleDelete(name); }}
+                title="Delete dataset"
+              >✕</button>
+            </div>
           </div>
         {/each}
       {/if}
+
+      <!-- Divider -->
+      <div class="ds-sidebar-divider"></div>
+
+      <!-- Schemas section -->
+      <div class="ds-sidebar-sec-header">
+        <span>Schemas</span>
+        <button class="ds-sb-icon-btn" onclick={onNewSchema} title="New schema">+</button>
+      </div>
+      {#if schemas.length === 0}
+        <div class="ds-sidebar-empty">No schemas yet</div>
+      {:else}
+        {#each schemas as s}
+          <div class="ds-schema-card">
+            <span class="ds-schema-name">{s.display_name}</span>
+            <div class="ds-schema-acts">
+              <button class="ds-schema-btn" onclick={() => onSchemaEdit(s.id)}>edit</button>
+              <button class="ds-schema-btn ds-schema-btn--del" onclick={() => handleDeleteSchema(s.id)}>del</button>
+            </div>
+          </div>
+        {/each}
+      {/if}
+
     </aside>
 
     <!-- Main -->
@@ -130,14 +175,9 @@
             <div class="ds-topbar-icon">{selectedDataset.slice(0,2).toUpperCase()}</div>
             <div>
               <div class="ds-topbar-name">{selectedDataset}</div>
-              <div class="ds-topbar-meta">{rows.length} records</div>
             </div>
           </div>
           <div class="ds-topbar-actions">
-            <div class="change-legend">
-              <div class="legend-item"><div class="legend-dot ld-new"></div> Official</div>
-              <div class="legend-item"><div class="legend-dot ld-changed"></div> Comparison</div>
-            </div>
             <button class="ds-btn ds-btn--update" class:ds-btn--active={activePanel === 'update'} onclick={() => { activePanel = activePanel === 'update' ? null : 'update'; }}>↻ Update</button>
             <button class="ds-btn ds-btn--index" class:ds-btn--active={activePanel === 'index'} onclick={() => { activePanel = activePanel === 'index' ? null : 'index'; }}>+ New Dataset</button>
             <a class="ds-btn" href="/outputs/{selectedDataset}" download>↓ Export CSV</a>
@@ -145,12 +185,11 @@
         </div>
 
         <!-- Job running banner -->
-        {#if jobStatus}
-        <div class="ds-job-banner" class:ds-job-banner--done={jobStatus.status !== 'running'}>
-          <span class="ds-job-dot" class:running={jobStatus.status === 'running'}></span>
-          {jobStatus.type === 'index' ? 'Indexing' : 'Updating'} dataset…
+        {#if activeJob}
+        <div class="ds-job-banner">
+          <span class="ds-job-dot running"></span>
+          {activeJob.type === 'index' ? 'Indexing' : 'Updating'} dataset…
           <a href="/app" class="ds-job-link">Watch in Monitor →</a>
-          <button class="ds-job-dismiss" onclick={() => jobStatus = null}>×</button>
         </div>
         {/if}
 
@@ -195,7 +234,7 @@
             <div class="ds-field">
               <label class="ds-label">Output dataset name</label>
               <input class="ds-input" bind:value={indexOutput} placeholder="my-dataset" list="ds-outputs-list" />
-              <datalist id="ds-outputs-list">{#each outputs as o}<option value={o}></option>{/each}</datalist>
+              <datalist id="ds-outputs-list">{#each datasets as o}<option value={o}></option>{/each}</datalist>
             </div>
             <div class="ds-field">
               <label class="ds-label">Max iterations</label>
@@ -208,43 +247,10 @@
         </div>
         {/if}
 
-        <!-- Table -->
-        {#if loading}
-          <div class="ds-empty">Loading…</div>
-        {:else if error}
-          <div class="ds-empty ds-empty--error">{error}</div>
-        {:else if rows.length === 0}
-          <div class="ds-empty">No records in this dataset yet</div>
-        {:else}
-          <div class="ds-table-wrap">
-            <table class="ds-table">
-              <thead>
-                <tr>
-                  {#each headers as h}
-                    <th class={cellClass(h)}>{h}</th>
-                  {/each}
-                </tr>
-              </thead>
-              <tbody>
-                {#each rows as row}
-                  <tr class={rowClass(row)}>
-                    {#each headers as h}
-                      {#if h === '_dataSource'}
-                        <td class="col-source">
-                          <span class="source-badge source-{String(row[h] ?? '')}">{row[h]}</span>
-                        </td>
-                      {:else}
-                        <td class={cellClass(h)} title={String(row[h] ?? '')}>
-                          {String(row[h] ?? '')}
-                        </td>
-                      {/if}
-                    {/each}
-                  </tr>
-                {/each}
-              </tbody>
-            </table>
-          </div>
-        {/if}
+        <!-- Records -->
+        <div class="records-card">
+          <RecordsTab file={selectedDataset} refreshTick={recordsTick} />
+        </div>
 
         <!-- Chat panel -->
         <div class="ds-chat">
@@ -317,21 +323,42 @@
     gap: 0.5rem;
   }
 
-  .ds-sidebar-header {
+  .ds-sidebar-sec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     font-family: 'Syne', sans-serif;
     font-weight: 700;
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #6b6860;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.1rem;
     padding: 0 0.25rem;
   }
+
+  .ds-sb-icon-btn {
+    all: unset;
+    cursor: pointer;
+    color: #9b9892;
+    font-size: 0.95rem;
+    line-height: 1;
+    transition: color 0.15s;
+  }
+  .ds-sb-icon-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  .ds-sb-icon-btn:hover { color: #0e0d0b; }
 
   .ds-sidebar-empty {
     font-size: 0.85rem;
     color: #9b9892;
     padding: 0.5rem 0.25rem;
+  }
+
+  .ds-sidebar-divider {
+    height: 1px;
+    background: #e8e6e0;
+    margin: 0.5rem 0;
+    flex-shrink: 0;
   }
 
   .ds-card {
@@ -344,6 +371,7 @@
     align-items: center;
     gap: 0.65rem;
     transition: border-color 0.12s, box-shadow 0.12s;
+    position: relative;
   }
   .ds-card:hover {
     border-color: #b8b6b0;
@@ -379,7 +407,86 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    flex: 1;
+    min-width: 0;
   }
+
+  .ds-card-acts {
+    display: flex;
+    gap: 0.15rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .ds-card:hover .ds-card-acts { opacity: 1; }
+
+  .ds-card-act-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: #9b9892;
+    padding: 0.15rem 0.25rem;
+    border-radius: 3px;
+    line-height: 1;
+    transition: color 0.12s;
+  }
+  .ds-card-act-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  .ds-card-act-btn:hover { color: #dc2626; }
+
+  /* Schema cards */
+  .ds-schema-card {
+    background: #ffffff;
+    border: 1px solid #e8e6e0;
+    border-radius: 8px;
+    padding: 0.55rem 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    transition: border-color 0.12s, box-shadow 0.12s;
+  }
+  .ds-schema-card:hover {
+    border-color: #b8b6b0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  }
+
+  .ds-schema-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #0e0d0b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ds-schema-acts {
+    display: flex;
+    gap: 0.25rem;
+    opacity: 0.4;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .ds-schema-card:hover .ds-schema-acts { opacity: 1; }
+
+  .ds-schema-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.67rem;
+    font-weight: 600;
+    color: #6b6860;
+    padding: 0.12rem 0.4rem;
+    border: 1px solid #dddbd5;
+    border-radius: 4px;
+    line-height: 1.4;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
+    background: #f5f3ee;
+  }
+  .ds-schema-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  .ds-schema-btn:hover { color: #0e0d0b; border-color: #aaa; background: #ececea; }
+  .ds-schema-btn--del:hover { color: #dc2626; border-color: #fca5a5; background: #fef2f2; }
 
   /* ── Main ── */
   .ds-main {
@@ -402,13 +509,11 @@
     border: 1px solid #dddbd5;
     border-radius: 14px;
   }
-  .ds-empty--error { color: #dc2626; }
 
   /* Top bar */
   .ds-topbar {
     background: #fff;
     border: 1px solid #dddbd5;
-    border-bottom: none;
     border-radius: 14px 14px 0 0;
     padding: 1rem 1.25rem;
     display: flex;
@@ -447,40 +552,12 @@
     letter-spacing: -0.02em;
   }
 
-  .ds-topbar-meta {
-    font-size: 0.78rem;
-    color: #6b6860;
-    margin-top: 0.05rem;
-  }
-
   .ds-topbar-actions {
     display: flex;
     align-items: center;
     gap: 1rem;
     flex-shrink: 0;
   }
-
-  .change-legend {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    font-size: 0.78rem;
-    color: #6b6860;
-  }
-  .legend-item {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-weight: 500;
-  }
-  .legend-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-  .ld-new     { background: #059669; }
-  .ld-changed { background: #d97706; }
 
   .ds-btn {
     all: unset;
@@ -499,9 +576,9 @@
     text-decoration: none;
     transition: border-color 0.12s, background 0.12s;
   }
+  .ds-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
   .ds-btn:hover { border-color: #aaa; background: #f5f3ee; }
 
-  /* Action panel buttons */
   .ds-btn--update { border-color: #fcd34d; color: #92400e; background: #fffbeb; }
   .ds-btn--update:hover { border-color: #f59e0b; background: #fef3c7; }
   .ds-btn--index { border-color: #67e8f9; color: #0e7490; background: #ecfeff; }
@@ -517,7 +594,6 @@
     font-size: 0.85rem; font-weight: 500; color: #92400e;
     font-family: 'DM Sans', sans-serif;
   }
-  .ds-job-banner--done { background: #f0fdf4; border-color: #86efac; color: #166534; }
   .ds-job-dot {
     width: 8px; height: 8px; border-radius: 50%;
     background: #f59e0b; flex-shrink: 0;
@@ -529,11 +605,6 @@
     font-size: 0.82rem;
   }
   .ds-job-link:hover { text-decoration: underline; }
-  .ds-job-dismiss {
-    all: unset; cursor: pointer; color: #aaa; font-size: 1rem; line-height: 1;
-    padding: 0 0.15rem;
-  }
-  .ds-job-dismiss:hover { color: #666; }
 
   /* Action panels */
   .ds-action-panel {
@@ -579,9 +650,19 @@
     font-family: 'DM Sans', sans-serif;
     transition: opacity 0.12s, transform 0.12s;
   }
+  .ds-submit:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
   .ds-submit:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
   .ds-submit:disabled { opacity: 0.4; cursor: not-allowed; }
   .ds-submit--teal { background: #22d3ee; color: #0e0d0b; }
+
+  /* Records card wrapper */
+  .records-card {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #dddbd5;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    margin-top: 0;
+  }
 
   /* Chat */
   .ds-chat {
@@ -648,7 +729,8 @@
     padding: 0.45rem 0.75rem;
     transition: border-color 0.12s;
   }
-  .ds-chat-input:focus { border-color: #22d3ee; outline: none; }
+  .ds-chat-input:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  .ds-chat-input:focus { border-color: #22d3ee; }
   .ds-chat-input::placeholder { color: #b8b6b0; }
   .ds-chat-input:disabled { opacity: 0.5; }
   .ds-chat-send {
@@ -658,71 +740,7 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: opacity 0.12s;
   }
+  .ds-chat-send:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
   .ds-chat-send:disabled { background: #e2e0db; color: #9b9892; cursor: not-allowed; }
   .ds-chat-send:not(:disabled):hover { opacity: 0.85; }
-
-  /* Table */
-  .ds-table-wrap {
-    overflow-x: auto;
-    background: #fff;
-    border: 1px solid #dddbd5;
-    border-radius: 0 0 14px 14px;
-  }
-
-  .ds-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-
-  .ds-table th {
-    text-align: left;
-    padding: 0.55rem 1.1rem;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: #6b6860;
-    background: #faf9f6;
-    border-bottom: 1px solid #eeece8;
-    white-space: nowrap;
-  }
-
-  .ds-table td {
-    padding: 0.6rem 1.1rem;
-    border-bottom: 1px solid #f5f3f0;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.78rem;
-    color: #0e0d0b;
-    white-space: nowrap;
-    max-width: 240px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .ds-table tr:last-child td { border-bottom: none; }
-  .ds-table tbody tr { transition: background 0.08s; }
-  .ds-table tbody tr:hover td { background: #faf9f6 !important; }
-
-  /* Column types */
-  :global(.ds-table .col-date)   { color: #9b9892; font-size: 0.74rem; }
-  :global(.ds-table .col-system) { color: #b8b6b0; font-size: 0.72rem; }
-
-  /* Row states */
-  .ds-table tbody tr.row-changed td { background: #fffbf0; }
-  .ds-table tbody tr.row-changed td:first-child { box-shadow: inset 3px 0 0 #d97706; }
-
-  /* Source badges */
-  .source-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.15rem 0.5rem;
-    border-radius: 10px;
-    font-size: 0.68rem;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-  }
-  .source-official   { background: #dcfce7; color: #15803d; }
-  .source-comparison { background: #fef9c3; color: #a16207; }
 </style>

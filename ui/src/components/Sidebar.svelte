@@ -57,7 +57,7 @@
       <IndexTab {schemas} />
     </div>
     <div class="panel" class:active={activeTab === 'update'}>
-      <UpdateTab {schemas} {outputs} />
+      <UpdateTab {schemas} selectedDataset={null} />
     </div>
     <div class="panel" class:active={activeTab === 'test'}>
       <TestTab {schemas} />

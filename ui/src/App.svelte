@@ -1,7 +1,6 @@
 <script lang="ts">
   import Header from './components/Header.svelte';
   import MonitorScreen from './components/MonitorScreen.svelte';
-  import ScrapeScreen from './components/ScrapeScreen.svelte';
   import DatasetsScreen from './components/DatasetsScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
@@ -9,13 +8,11 @@
   import { dashStore } from './stores/dashboard.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
 
-  let screen = $state<'monitor' | 'scrape' | 'datasets'>('monitor');
-  let scrapeInitialDataset = $state<string | null>(null);
+  let screen = $state<'monitor' | 'datasets'>('monitor');
 
   $effect(() => {
     if (dashStore.navTarget) {
-      scrapeInitialDataset = dashStore.navTarget;
-      screen = 'scrape';
+      screen = 'datasets';
       dashStore.navTarget = null;
     }
   });
@@ -57,12 +54,9 @@
 {#if screen === 'monitor'}
   <MonitorScreen />
 {:else if screen === 'datasets'}
-  <DatasetsScreen {outputs} {schemas} />
-{:else}
-  <ScrapeScreen
-    {schemas}
+  <DatasetsScreen
     {outputs}
-    initialDataset={scrapeInitialDataset}
+    {schemas}
     onSchemaEdit={(id) => { editingSchemaId = id; schemaModalOpen = true; }}
     onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
     onSelectsReload={loadSelects}
