@@ -1,12 +1,11 @@
 import { runAgent } from "../agent/loop.js";
-import { runAgentOpenAI } from "../agent/openai-loop.js";
 import { runUpdate } from "../commands/update.js";
 import { appendRecords, listDatasets } from "../tools/records.js";
 import type { RunConfig, SchemaDefinition, ExtractedRecord, EmitFn } from "../types.js";
 import { emitEvent, finishJob, type Job } from "./jobs.js";
 import { db } from "./db.js";
 import { readSettings } from "./settings.js";
-import { createAnthropicClient, createOpenAIClient, createZordMindClient, type OpenAILLMClient } from "../agent/llm-client.js";
+import { createAnthropicClient, createOpenAIClient, createZordMindClient } from "../agent/llm-client.js";
 import { dbListSchemas, dbGetSchema } from "./schema-store.js";
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY ?? "";
@@ -51,6 +50,8 @@ export async function runIndexJob(job: Job): Promise<void> {
   const emit = makeEmitter(job);
 
   try {
+    const settings = readSettings();
+    const llmClient = makeLLMClient();
     const schemaDef = loadSchema(schema);
     const dataset = output.replace(/\.csv$/i, "");
 
@@ -58,7 +59,7 @@ export async function runIndexJob(job: Job): Promise<void> {
       topic,
       schemaDef,
       maxDepth: 3,
-      maxIterations: job.params.maxIterations ? parseInt(job.params.maxIterations, 10) : 40,
+      maxIterations: job.params.maxIterations ? Number(job.params.maxIterations) : 40,
       seedUrls: job.params.seedUrls ? job.params.seedUrls.split(",").map((u) => u.trim()).filter(Boolean) : undefined,
     };
 
@@ -72,12 +73,7 @@ export async function runIndexJob(job: Job): Promise<void> {
       totalSkipped += skipped;
     };
 
-    const llmClient = makeLLMClient();
-    if (llmClient.provider === "openai") {
-      await runAgentOpenAI(config, llmClient as OpenAILLMClient, SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
-    } else {
-      await runAgent(config, llmClient, SERPAPI_KEY, readSettings().crawl4aiBase, onRecords, emit, job.abortController.signal);
-    }
+    await runAgent(config, llmClient, SERPAPI_KEY, settings.crawl4aiBase, onRecords, emit, job.abortController.signal);
     if (job.abortController.signal.aborted) {
       finishJob(job, "cancelled", "Cancelled by user");
     } else {
@@ -93,10 +89,12 @@ export async function runUpdateJob(job: Job): Promise<void> {
   const emit = makeEmitter(job);
 
   try {
+    const settings = readSettings();
+    const llmClient = makeLLMClient();
     const schemaDef = loadSchema(schema);
     const dataset = input.replace(/\.csv$/i, "");
 
-    await runUpdate(dataset, schemaDef, makeLLMClient(), readSettings().crawl4aiBase, {
+    await runUpdate(dataset, schemaDef, llmClient, settings.crawl4aiBase, {
       signal: job.abortController.signal,
       filter: job.params.filter,
       serpApiKey: SERPAPI_KEY,

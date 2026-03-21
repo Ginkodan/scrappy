@@ -112,41 +112,39 @@ function buildSystemPrompt(
   recordCount?: number
 ): string {
   const fieldList = Object.entries(config.schemaDef.fieldDescriptions)
-    .map(([k, v]) => `  - ${k}: ${v}`)
+    .map(([k, v]) => `  ${k}: ${v}`)
     .join("\n");
 
-  const stateSection =
-    visitedUrls && visitedUrls.size > 0
-      ? `\n\nCurrent state: ${recordCount ?? 0} records found so far.\nAlready visited URLs — do NOT scrape again:\n${[...visitedUrls].map((u) => `  ${u}`).join("\n")}`
-      : "";
-
   const seedSection = config.seedUrls?.length
-    ? `\n\nSeed URLs — scrape these FIRST in your very first iteration (before any searches):\n${config.seedUrls.map((u) => `  ${u}`).join("\n")}`
+    ? `\n\nStart by scraping these URLs before running any searches:\n${config.seedUrls.map((u) => `  ${u}`).join("\n")}`
     : "";
 
-  return `You are a research agent that extracts structured data from the web.
+  const visitedSection =
+    visitedUrls && visitedUrls.size > 0
+      ? `\n\nAlready scraped — do not revisit:\n${[...visitedUrls].map((u) => `  ${u}`).join("\n")}`
+      : "";
 
-Your task: Find complete, accurate data for the topic "${config.topic}".
+  return `You are a structured data extraction agent. Your task is to build a COMPLETE, accurate dataset about: "${config.topic}". You must continue working until the dataset is fully complete — do not stop early.
 
-Target data schema:
+## Target schema
 ${fieldList}
 
-Strategy:
-1. Generate 2-3 targeted search queries (add terms like "Vergleich", "Zinssatz", "2025", "Schweiz")
-2. Search Google for each query
-3. Scrape comparison portals first (moneyland, comparis, evaluno, vermoegens-partner, schwiizerfranke, etc.)
-4. After EVERY scrape, immediately call extract_structured_data with whatever records you found (even if 0)
-5. From each comparison site, extract ALL links to individual bank/provider product pages and scrape those too — official provider pages are the authoritative source for current rates
-6. From official bank pages, also extract records and prefer them over comparison site data
-7. Continue until all providers found on comparison sites have been visited directly, then call finish${seedSection}
+## Workflow — follow exactly
+1. Plan: briefly note which queries you will run.
+2. Search: call search_google for 2-3 queries from different angles (you may call multiple in parallel).
+3. Scrape comparison portals first (moneyland.ch, comparis.ch, finpension.ch, evaluno.ch, etc.) — they list many providers on one page.
+4. After EACH scrape_url, immediately call extract_structured_data with all records you found (pass empty array if none — still required). For comparison site pages: extract every provider record listed; leave the url field blank if you only have a comparison site URL.
+5. From comparison pages, collect all links to individual provider/bank pages and scrape those too — official pages have authoritative data and you should prefer their records.
+6. Keep searching and scraping until all referenced providers have been visited. Most topics have 20–50+ providers.
+7. Only call finish after exhausting all known provider pages AND running follow-up searches to catch missed ones.
 
-Rules:
-- After every scrape_url call, you MUST call extract_structured_data — do not skip this step
-- Comparison sites may have outdated rates — always try to scrape the official provider page directly
-- On comparison sites, follow every link that leads to an individual bank or product page
-- Only include records where you are fully confident — no guessing
+## Rules
+- Always call tools — never describe what you would do without calling a tool
+- Call extract_structured_data after EVERY scrape_url call — no exceptions, even for 0 records
+- You may call multiple search_google in parallel; for scrape_url try to batch multiple at once too
 - Never scrape the same URL twice
-- A missed record is worse than an extra tool call — be exhaustive${stateSection}`;
+- Only save records where all required fields are clearly stated — no guessing
+- Records collected so far: ${recordCount ?? 0}${seedSection}${visitedSection}`;
 }
 
 async function withRetry<T>(
@@ -158,7 +156,7 @@ async function withRetry<T>(
     try {
       return await fn();
     } catch (err) {
-      const isRetryable = err instanceof Error && /5\d\d|overloaded|internal server error/i.test(err.message);
+      const isRetryable = err instanceof Error && /5\d\d|rate.?limit|overloaded|internal server error/i.test(err.message);
       if (!isRetryable || attempt === maxAttempts) throw err;
       const delay = attempt * 5000;
       log("log", { message: `API error (attempt ${attempt}/${maxAttempts}), retrying in ${delay / 1000}s: ${err.message}` });
@@ -242,16 +240,28 @@ export async function runAgent(
     // Handle finish synchronously before dispatching parallel work
     const finishBlock = toolBlocks.find((b) => b.name === "finish");
     if (finishBlock) {
-      const minScrapes = Math.min(20, Math.floor(config.maxIterations * 0.75));
+      const minScrapes = Math.min(25, Math.floor(config.maxIterations * 0.8));
       const tooFewScrapes = visitedUrls.size < minScrapes;
       const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
+      // Check if there are providers only seen on comparison sites with no official record yet
+      const officialProviders = new Set(
+        allRecords.filter(r => r._dataSource === "official").map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? "").toLowerCase())
+      );
+      const comparisonOnlyProviders = allRecords
+        .filter(r => r._dataSource === "comparison")
+        .map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? ""))
+        .filter(name => name && !officialProviders.has(name.toLowerCase()));
+      const uniqueComparisonOnly = [...new Set(comparisonOnlyProviders)].slice(0, 5);
+      const hasUnvisitedProviders = uniqueComparisonOnly.length > 0;
       const notNearEnd = iteration < config.maxIterations - 3;
-      if ((tooFewScrapes || tooFewRecords) && notNearEnd) {
+      if ((tooFewScrapes || tooFewRecords || hasUnvisitedProviders) && notNearEnd) {
         const reason = tooFewRecords
           ? `only ${allRecords.length} records found so far — keep scraping more provider pages`
+          : hasUnvisitedProviders
+          ? `these providers only have comparison data, no official pages scraped yet: ${uniqueComparisonOnly.join(", ")}`
           : `only ${visitedUrls.size} pages scraped out of expected ~${minScrapes}`;
         log("log", { message: `Finish rejected (${reason}). Continuing…` });
-        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}. Continue searching and scraping individual provider pages.` }] });
+        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}. Search for and scrape the official pages for these providers.` }] });
         continue;
       }
       const input = finishBlock.input as ToolInput;
