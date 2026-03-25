@@ -21,7 +21,7 @@ body {
 .app-content {
   flex: 1;
   min-height: 0;
-  padding: 1.5rem;
+  padding: 1.5rem 1.5rem 0;
   overflow-y: auto;
 }
 .app-header h1 { font-size: 1.2rem; font-weight: 700; color: #0e0d0b; letter-spacing: -0.02em; }

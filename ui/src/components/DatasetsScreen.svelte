@@ -738,7 +738,8 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    height: 50vh;
+    flex: 1;
+    min-height: 0;
   }
   .ds-chat-header {
     display: flex; align-items: center; gap: 0.5rem;
