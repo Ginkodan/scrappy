@@ -526,6 +526,66 @@ Be concise and practical. If the user asks why something failed, look at the job
   }
 });
 
+// --- schema generation via LLM ---
+app.post("/chat/schema", async (req, reply) => {
+  try {
+    const body = req.body as { description?: string } | null;
+    const description = body?.description?.trim() ?? "";
+    if (!description) return reply.code(400).send({ error: "description required" });
+
+    const system = `You are a schema designer for Scrappy, an AI-powered web scraping tool.
+Given a description of what the user wants to scrape, generate a schema definition.
+
+Respond ONLY with valid JSON in this exact shape — no markdown, no explanation, just JSON:
+{
+  "reply": "A brief friendly sentence confirming what you created (1-2 sentences max)",
+  "schema": {
+    "id": "kebab-case-id",
+    "display_name": "Human Readable Name",
+    "fields": [
+      { "name": "camelCaseFieldName", "optional": false, "description": "What to extract from the page" }
+    ],
+    "url_field": "url",
+    "dedupe_key": ["primaryNameField"],
+    "rate_fields": ["numericOrChangingField"],
+    "naming_rules": ["fieldName: normalization instruction"]
+  }
+}
+
+Rules:
+- Always include a "url" field (url_field must point to it)
+- Put the entity's primary name as the first field (e.g. bankName, schoolName, sellerName)
+- dedupe_key: fields that uniquely identify a record (primary name + variant/product typically)
+- rate_fields: numeric or frequently-changing fields (prices, rates, scores) — omit if none
+- naming_rules: short instructions like "bankName: use official brand name, not branch" — omit if not needed
+- field names in camelCase, id in kebab-case, optional: true for fields that may not always exist`;
+
+    const llm = getLLMClient();
+    const response = await llm.messages.create({
+      model: llm.extractModel,
+      max_tokens: 1024,
+      system,
+      messages: [{ role: "user" as const, content: description }],
+    });
+    const text = response.content
+      .filter(b => b.type === "text")
+      .map(b => (b as { type: "text"; text: string }).text)
+      .join("").trim();
+
+    let parsed: unknown;
+    try {
+      // strip markdown code fences if present
+      const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```$/i, "").trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      return reply.code(500).send({ error: "LLM returned invalid JSON", raw: text });
+    }
+    return reply.send(parsed);
+  } catch (e) {
+    return reply.code(500).send({ error: String(e) });
+  }
+});
+
 await seedSchemasFromFiles(db);
 
 const port = parseInt(process.env.PORT ?? "3000", 10);

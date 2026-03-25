@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getSchema, saveSchema } from '../../lib/api';
+  import { getSchema, saveSchema, generateSchema } from '../../lib/api';
 
   const {
     open,
@@ -19,6 +19,12 @@
     description: string;
   }
 
+  interface ChatMsg {
+    role: 'user' | 'assistant';
+    content: string;
+  }
+
+  // Form state
   let id = $state('');
   let idDisabled = $state(false);
   let displayName = $state('');
@@ -30,6 +36,18 @@
   let fields = $state<FieldRow[]>([{ name: '', optional: false, description: '' }]);
   let statusText = $state('');
   let statusColor = $state('#4caf50');
+
+  // Chat / new-schema state
+  let chatInput = $state('');
+  let chatMessages = $state<ChatMsg[]>([]);
+  let generating = $state(false);
+  let schemaDone = $state(false);
+  let advancedOpen = $state(false);
+
+  const isNew = $derived(!editingId);
+  const canSave = $derived(
+    schemaDone || (id.trim().length > 0 && displayName.trim().length > 0 && fields.some(f => f.name.trim()))
+  );
 
   $effect(() => {
     if (open) {
@@ -46,9 +64,47 @@
         namingRules = '';
         fields = [{ name: '', optional: false, description: '' }];
         statusText = '';
+        chatInput = '';
+        chatMessages = [];
+        generating = false;
+        schemaDone = false;
+        advancedOpen = false;
       }
     }
   });
+
+  async function handleGenerate() {
+    const desc = chatInput.trim();
+    if (!desc || generating) return;
+    chatMessages = [...chatMessages, { role: 'user', content: desc }];
+    chatInput = '';
+    generating = true;
+    const res = await generateSchema(desc);
+    generating = false;
+    if (res.error || !res.schema) {
+      chatMessages = [...chatMessages, { role: 'assistant', content: `Sorry, I couldn't generate a schema: ${res.error ?? 'unknown error'}` }];
+      return;
+    }
+    // Fill form from schema
+    const s = res.schema;
+    id = s.id;
+    displayName = s.display_name;
+    urlField = s.url_field || 'url';
+    dedupeKey = (s.dedupe_key ?? []).join(', ');
+    rateFields = (s.rate_fields ?? []).join(', ');
+    namingRules = (s.naming_rules ?? []).join('\n');
+    entityField = '';
+    fields = s.fields.map(f => ({ name: f.name, optional: f.optional ?? false, description: f.description }));
+    schemaDone = true;
+    chatMessages = [...chatMessages, { role: 'assistant', content: res.reply }];
+  }
+
+  function handleChatKey(e: KeyboardEvent) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleGenerate();
+    }
+  }
 
   async function loadSchema(schId: string) {
     const row = await getSchema(schId);
@@ -121,15 +177,76 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="modal-backdrop" class:open onclick={handleBackdropClick}>
-  <div class="schema-modal">
+  <div class="schema-modal" class:schema-modal--new={isNew}>
 
     <div class="sm-header">
-      <span class="sm-title">{editingId ? 'Edit Schema' : 'New Schema'}</span>
+      <span class="sm-title">{editingId ? 'Edit Schema' : 'New Dataset'}</span>
       <button class="sm-close" onclick={onClose}>✕</button>
     </div>
 
     <div class="sm-body">
 
+      {#if isNew}
+        <!-- Chat interface -->
+        <div class="chat-area">
+          {#if chatMessages.length === 0 && !generating}
+            <div class="chat-empty">
+              <div class="chat-empty-title">What do you want to scrape?</div>
+              <div class="chat-empty-body">Describe the data and I'll generate a schema for you.</div>
+              <div class="chat-examples">
+                <button class="chat-example" onclick={() => { chatInput = 'Swiss 3A pension fund interest rates by bank and plan'; }}>Swiss 3A fund rates</button>
+                <button class="chat-example" onclick={() => { chatInput = 'Online schools offering AI and machine learning courses'; }}>AI school listings</button>
+                <button class="chat-example" onclick={() => { chatInput = 'Mortgage rates from Swiss banks with LTV and term'; }}>Swiss mortgage rates</button>
+              </div>
+            </div>
+          {:else}
+            <div class="chat-messages">
+              {#each chatMessages as msg}
+                <div class="chat-msg chat-msg--{msg.role}">
+                  <div class="chat-bubble">{msg.content}</div>
+                </div>
+              {/each}
+              {#if generating}
+                <div class="chat-msg chat-msg--assistant">
+                  <div class="chat-bubble chat-bubble--thinking">
+                    <span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span>
+                  </div>
+                </div>
+              {/if}
+            </div>
+          {/if}
+        </div>
+
+        {#if schemaDone}
+          <div class="schema-chip">
+            <span class="schema-chip-icon">✓</span>
+            <span class="schema-chip-name">{displayName}</span>
+            <span class="schema-chip-meta">{fields.length} field{fields.length !== 1 ? 's' : ''}</span>
+          </div>
+        {/if}
+
+        <div class="chat-input-row">
+          <textarea
+            class="chat-input"
+            bind:value={chatInput}
+            placeholder={schemaDone ? 'Describe changes to refine…' : 'Describe what to scrape…'}
+            rows="2"
+            onkeydown={handleChatKey}
+            disabled={generating}
+          ></textarea>
+          <button class="chat-send-btn" onclick={handleGenerate} disabled={generating || !chatInput.trim()}>
+            {generating ? '…' : schemaDone ? 'Refine' : 'Generate →'}
+          </button>
+        </div>
+
+        <button class="advanced-toggle" onclick={() => { advancedOpen = !advancedOpen; }}>
+          <span class="advanced-arrow">{advancedOpen ? '▼' : '▶'}</span>
+          Advanced
+          {#if schemaDone}<span class="advanced-hint">review or edit the generated schema</span>{/if}
+        </button>
+      {/if}
+
+      {#if !isNew || advancedOpen}
       <!-- Identity -->
       <section class="sm-section">
         <div class="sm-section-head">
@@ -233,13 +350,17 @@
         ></textarea>
       </section>
 
+      {/if}
+
     </div>
 
     <div class="sm-footer">
       {#if statusText}
         <span class="sm-status" style="color:{statusColor}">{statusText}</span>
       {/if}
-      <button class="sm-save-btn" onclick={handleSave}>Save schema</button>
+      <button class="sm-save-btn" onclick={handleSave} disabled={isNew && !canSave}>
+        {editingId ? 'Save changes' : 'Save schema'}
+      </button>
     </div>
 
   </div>
@@ -522,4 +643,193 @@
     white-space: nowrap;
   }
   .sm-save-btn:hover { background: #06b6d4; }
+  .sm-save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* New-mode width */
+  .schema-modal--new {
+    width: 560px;
+  }
+
+  /* Chat area */
+  .chat-area {
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chat-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.5rem 1rem;
+    text-align: center;
+  }
+  .chat-empty-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: #ccc;
+  }
+  .chat-empty-body {
+    font-size: 0.75rem;
+    color: #555;
+    max-width: 280px;
+    line-height: 1.5;
+  }
+  .chat-examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    justify-content: center;
+    margin-top: 0.6rem;
+  }
+  .chat-example {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.7rem;
+    color: #666;
+    border: 1px solid #2a2a2a;
+    border-radius: 20px;
+    padding: 0.3rem 0.75rem;
+    transition: color 0.12s, border-color 0.12s;
+  }
+  .chat-example:hover { color: #22d3ee; border-color: #22d3ee; }
+
+  .chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    padding: 0.75rem 0;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .chat-msg {
+    display: flex;
+  }
+  .chat-msg--user { justify-content: flex-end; }
+  .chat-msg--assistant { justify-content: flex-start; }
+
+  .chat-bubble {
+    max-width: 80%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+  }
+  .chat-msg--user .chat-bubble {
+    background: #22d3ee;
+    color: #000;
+    border-bottom-right-radius: 3px;
+  }
+  .chat-msg--assistant .chat-bubble {
+    background: #1a1a1a;
+    color: #ccc;
+    border: 1px solid #252525;
+    border-bottom-left-radius: 3px;
+  }
+
+  .chat-bubble--thinking {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.55rem 0.85rem;
+  }
+  .chat-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: #555;
+    animation: chat-bounce 1.2s infinite;
+  }
+  .chat-dot:nth-child(2) { animation-delay: 0.2s; }
+  .chat-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes chat-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-4px); opacity: 1; }
+  }
+
+  /* Schema chip */
+  .schema-chip {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: #0d1f0d;
+    border: 1px solid #1a3a1a;
+    border-radius: 6px;
+    padding: 0.45rem 0.75rem;
+    margin: 0.5rem 0;
+  }
+  .schema-chip-icon { color: #4ade80; font-size: 0.8rem; flex-shrink: 0; }
+  .schema-chip-name { font-size: 0.82rem; font-weight: 600; color: #ccc; }
+  .schema-chip-meta { font-size: 0.72rem; color: #555; margin-left: auto; font-family: "IBM Plex Mono", monospace; }
+
+  /* Chat input row */
+  .chat-input-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+    margin-top: 0.5rem;
+  }
+  .chat-input {
+    flex: 1;
+    background: #0d0d0d;
+    border: 1px solid #222;
+    border-radius: 6px;
+    padding: 0.45rem 0.65rem;
+    color: #ccc;
+    font-size: 0.78rem;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .chat-input:focus { border-color: #22d3ee; }
+  .chat-input::placeholder { color: #3a3a3a; }
+  .chat-input:disabled { opacity: 0.5; }
+
+  .chat-send-btn {
+    all: unset;
+    cursor: pointer;
+    background: #22d3ee;
+    color: #000;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border-radius: 6px;
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+    transition: background 0.15s, opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .chat-send-btn:hover { background: #06b6d4; }
+  .chat-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+  /* Advanced toggle */
+  .advanced-toggle {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.7rem;
+    color: #555;
+    margin-top: 0.85rem;
+    padding: 0.3rem 0;
+    border-top: 1px solid #1a1a1a;
+    width: 100%;
+    box-sizing: border-box;
+    transition: color 0.12s;
+  }
+  .advanced-toggle:hover { color: #aaa; }
+  .advanced-arrow { font-size: 0.55rem; color: #444; }
+  .advanced-hint {
+    font-size: 0.65rem;
+    color: #444;
+    margin-left: auto;
+    font-style: italic;
+  }
 </style>

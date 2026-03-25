@@ -173,6 +173,27 @@ export async function deleteEntity(key: string): Promise<void> {
   await apiFetch(`/entities/${encodeURIComponent(key)}`, { method: 'DELETE' });
 }
 
+export async function generateSchema(description: string): Promise<{
+  reply: string;
+  schema: {
+    id: string;
+    display_name: string;
+    fields: Array<{ name: string; optional: boolean; description: string }>;
+    url_field: string;
+    dedupe_key: string[];
+    rate_fields: string[];
+    naming_rules: string[];
+  };
+  error?: string;
+}> {
+  const res = await fetch('/chat/schema', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ description }),
+  });
+  return res.json();
+}
+
 export async function sendChat(
   message: string,
   jobId?: string,
