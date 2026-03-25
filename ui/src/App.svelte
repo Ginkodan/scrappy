@@ -69,7 +69,9 @@
 
 <main class="app-content">
   {#if screen === 'monitor'}
-    <MonitorScreen />
+    <div class="monitor-scroll">
+      <MonitorScreen />
+    </div>
   {:else if screen === 'datasets'}
     <DatasetsScreen
       {outputs}

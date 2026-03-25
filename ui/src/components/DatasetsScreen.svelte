@@ -322,7 +322,8 @@
   /* Root */
   .ds-root {
     font-family: 'DM Sans', sans-serif;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
     overflow: hidden;
     display: flex;
     flex-direction: column;
