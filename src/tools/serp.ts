@@ -7,7 +7,6 @@ export async function searchGoogle(query: string, apiKey: string): Promise<strin
     engine: "google",
     num: "100",
     hl: "de",
-    gl: "ch",
   });
 
   const res = await fetch(`${SERPAPI_BASE}?${params}`);
@@ -20,5 +19,14 @@ export async function searchGoogle(query: string, apiKey: string): Promise<strin
     .map((r) => r.link)
     .filter((url): url is string => typeof url === "string");
 
-  return urls;
+  // Deduplicate to one result per domain so a single site doesn't dominate
+  const seenDomains = new Set<string>();
+  return urls.filter(url => {
+    try {
+      const host = new URL(url).hostname.replace(/^www\./, "");
+      if (seenDomains.has(host)) return false;
+      seenDomains.add(host);
+      return true;
+    } catch { return true; }
+  });
 }
