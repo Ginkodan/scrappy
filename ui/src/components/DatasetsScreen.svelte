@@ -120,7 +120,8 @@
       {activePanel}
       onSelectDataset={handleSelectDataset}
       onDelete={handleDelete}
-      onNewDataset={() => { selectedDataset = null; activePanel = activePanel === 'create' ? null : 'create'; }}
+      onNewDataset={onNewSchema}
+      onRunJob={() => { selectedDataset = null; activePanel = activePanel === 'create' ? null : 'create'; }}
       {onSchemaEdit}
       onDeleteSchema={handleDeleteSchema}
       {onNewSchema}

@@ -7,6 +7,7 @@
     onSelectDataset,
     onDelete,
     onNewDataset,
+    onRunJob,
     onSchemaEdit,
     onDeleteSchema,
     onNewSchema,
@@ -19,6 +20,7 @@
     onSelectDataset: (name: string) => void;
     onDelete: (name: string) => void;
     onNewDataset: () => void;
+    onRunJob: () => void;
     onSchemaEdit: (id: string) => void;
     onDeleteSchema: (id: string) => void;
     onNewSchema: () => void;
@@ -38,7 +40,10 @@
   <!-- Datasets section -->
   <div class="ds-sidebar-sec-header">
     <span>Datasets</span>
-    <button class="ds-sb-icon-btn" onclick={onRefresh} title="Refresh">↺</button>
+    <div class="ds-sb-header-btns">
+      <button class="ds-sb-icon-btn" onclick={onRunJob} title="Run scrape job" class:ds-sb-icon-btn--active={activePanel === 'create'}>▶</button>
+      <button class="ds-sb-icon-btn" onclick={onRefresh} title="Refresh">↺</button>
+    </div>
   </div>
   {#if datasets.length === 0}
     <div class="ds-sidebar-empty">No datasets yet</div>
@@ -136,16 +141,23 @@
     padding: 0 0.25rem;
   }
 
+  .ds-sb-header-btns {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
   .ds-sb-icon-btn {
     all: unset;
     cursor: pointer;
     color: #9b9892;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     line-height: 1;
     transition: color 0.15s;
+    padding: 0.1rem 0.15rem;
   }
   .ds-sb-icon-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
   .ds-sb-icon-btn:hover { color: #0e0d0b; }
+  .ds-sb-icon-btn--active { color: #0e7490; }
 
   .ds-sidebar-empty {
     font-size: 0.85rem;
