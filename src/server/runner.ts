@@ -13,10 +13,6 @@ const OPENAI_API_KEY = process.env.OPENAI_KEY ?? "";
 const SERPAPI_KEY = process.env.SERPAPI_KEY ?? "";
 
 export function getLLMClient() {
-  return makeLLMClient();
-}
-
-function makeLLMClient() {
   const settings = readSettings();
   if (settings.llmProvider === "openai") {
     return createOpenAIClient(OPENAI_API_KEY, settings.openaiModel, settings.openaiExtractModel);
@@ -51,7 +47,7 @@ export async function runIndexJob(job: Job): Promise<void> {
 
   try {
     const settings = readSettings();
-    const llmClient = makeLLMClient();
+    const llmClient = getLLMClient();
     const schemaDef = loadSchema(schema);
     const dataset = output.replace(/\.csv$/i, "");
 
@@ -60,7 +56,13 @@ export async function runIndexJob(job: Job): Promise<void> {
       schemaDef,
       maxDepth: 3,
       maxIterations: job.params.maxIterations ? Number(job.params.maxIterations) : 40,
-      seedUrls: job.params.seedUrls ? job.params.seedUrls.split(",").map((u) => u.trim()).filter(Boolean) : undefined,
+      seedUrls: (() => {
+        const urls = [
+          ...(schemaDef.seedUrls ?? []),
+          ...(job.params.seedUrls ? job.params.seedUrls.split(",").map((u: string) => u.trim()) : []),
+        ].filter(Boolean);
+        return urls.length ? urls : undefined;
+      })(),
     };
 
     let totalWritten = 0;
@@ -90,7 +92,7 @@ export async function runUpdateJob(job: Job): Promise<void> {
 
   try {
     const settings = readSettings();
-    const llmClient = makeLLMClient();
+    const llmClient = getLLMClient();
     const schemaDef = loadSchema(schema);
     const dataset = input.replace(/\.csv$/i, "");
 

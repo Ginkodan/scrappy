@@ -16,5 +16,8 @@
     "svelte-check": "^4.2.1",
     "typescript": "^5.8.3",
     "vite": "^6.3.5"
+  },
+  "dependencies": {
+    "bits-ui": "^2.16.3"
   }
 }

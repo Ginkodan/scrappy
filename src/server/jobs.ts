@@ -86,11 +86,6 @@ export function emitEvent(job: Job, type: string, payload: Record<string, unknow
   }
 }
 
-/** Backward-compat helper: emit a plain log line as a "log" event */
-export function appendLog(job: Job, line: string): void {
-  emitEvent(job, "log", { message: line });
-}
-
 export function finishJob(job: Job, status: "done" | "failed" | "cancelled", result?: string): void {
   const finishedAt = new Date().toISOString();
   dbFinishJob(job.id, status, finishedAt, result);

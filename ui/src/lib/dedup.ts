@@ -129,9 +129,9 @@ export function groupMaxScore(
 
 export function dupScaleHtml(score: number): string {
   const filled = Math.round(score * 5);
-  const color = score >= 1 ? '#f44336' : score >= 0.6 ? '#ffb74d' : score >= 0.2 ? '#666' : '#2a2a2a';
+  const color = score >= 1 ? '#dc2626' : score >= 0.6 ? '#d97706' : score >= 0.2 ? '#6b7280' : '#d1d5db';
   const bars = Array.from({ length: 5 }, (_, i) =>
-    `<span style="display:inline-block;width:5px;height:10px;border-radius:1px;background:${i < filled ? color : '#1e1e1e'};margin-right:1px"></span>`
+    `<span style="display:inline-block;width:5px;height:10px;border-radius:1px;background:${i < filled ? color : '#e5e7eb'};margin-right:1px"></span>`
   ).join('');
   const label = score >= 1 ? 'exact' : score >= 0.6 ? 'likely' : score >= 0.2 ? 'possible' : 'unique';
   return `<span title="${Math.round(score * 100)}% (${label})" style="display:inline-flex;align-items:center;gap:3px">${bars}</span>`;

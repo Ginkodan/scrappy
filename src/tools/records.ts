@@ -294,9 +294,6 @@ export function deduplicateDataset(
     .prepare("SELECT * FROM records WHERE dataset = ? ORDER BY id")
     .all(dataset) as DbRow[];
 
-  const normName = (s: string) =>
-    s.toLowerCase().replace(/\b(ag|sa|gmbh|ltd|inc|co\.?)\b/g, "").replace(/\s+/g, " ").trim();
-
   const seen = new Map<string, number>(); // key → id (keep official over comparison)
   const toDelete: number[] = [];
 
@@ -314,7 +311,7 @@ export function deduplicateDataset(
       .map(([, v]) => (v ?? "").toLowerCase())
       .join("|");
     const urlKey = parsed["url"] && parsed["bankName"]
-      ? `${normName(parsed["bankName"])}|${normalizeUrlForDedup(parsed["url"])}`
+      ? `${normalizeField("bankName", parsed["bankName"] ?? "")}|${normalizeUrlForDedup(parsed["url"])}`
       : null;
 
     const dupKey = urlKey ?? key;

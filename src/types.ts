@@ -12,6 +12,8 @@ export interface SchemaDefinition {
   rateFields: string[];
   /** Optional naming/consistency rules passed to the LLM during extraction (e.g. how to normalise names) */
   namingRules?: string[];
+  /** URLs to scrape first, before the agent starts searching */
+  seedUrls?: string[];
 }
 
 export interface RunConfig {

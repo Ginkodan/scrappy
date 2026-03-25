@@ -84,9 +84,12 @@ export interface Schema {
   id: string;
   display_name: string;
   fields: SchemaField[];
+  /** JSON-encoded string[] */
   dedupe_key: string;
   url_field: string;
+  /** JSON-encoded string[] */
   rate_fields: string;
+  /** JSON-encoded string[] */
   naming_rules?: string;
 }
 

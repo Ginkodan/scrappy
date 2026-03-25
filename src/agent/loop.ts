@@ -9,6 +9,8 @@ import { buildSystemPrompt } from "./prompts.js";
 import { withRetry } from "../lib/retry.js";
 import { normalizeUrl } from "../lib/url.js";
 
+const CONTEXT_WINDOW = 4; // keep last N assistant+user pairs
+
 type ToolName =
   | "search_google"
   | "scrape_url"
@@ -234,8 +236,6 @@ export async function runAgent(
   log("log", { message: `Agent loop ended. ${allRecords.length} records collected.` });
   return allRecords;
 }
-
-const CONTEXT_WINDOW = 4; // keep last N assistant+user pairs
 
 function trimMessages(messages: Anthropic.MessageParam[]): void {
   // messages[0] is always the initial user prompt

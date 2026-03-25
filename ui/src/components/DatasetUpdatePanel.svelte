@@ -1,5 +1,6 @@
 <script lang="ts">
   import { startUpdateJob } from '../lib/api';
+  import { Select } from 'bits-ui';
 
   const {
     dataset,
@@ -13,22 +14,20 @@
     onSubmit: () => void;
   } = $props();
 
-  let updateSchema = $state('');
+  let updateSchema = $state<string | undefined>(undefined);
   let updateFilter = $state('');
   let submitting = $state(false);
 
   // Sync initialSchema when it becomes available (resolved asynchronously from parent)
   $effect(() => {
     const s = initialSchema;
-    if (s && !updateSchema) {
-      updateSchema = s;
-    }
+    if (s && !updateSchema) updateSchema = s;
   });
 
   async function startUpdate() {
     if (!dataset || !updateSchema) return;
     submitting = true;
-    await startUpdateJob({ input: dataset, schema: updateSchema, filter: updateFilter || undefined });
+    await startUpdateJob({ input: dataset, schema: updateSchema!, filter: updateFilter || undefined });
     submitting = false;
     onSubmit();
   }
@@ -39,16 +38,30 @@
   <div class="ds-panel-fields">
     <div class="ds-field">
       <label class="ds-label" for="update-schema">Schema</label>
-      <select id="update-schema" class="ds-select" bind:value={updateSchema}>
-        {#each schemas as s}<option value={s.id}>{s.display_name}</option>{/each}
-      </select>
+      <Select.Root type="single" bind:value={updateSchema} name="update-schema">
+        <Select.Trigger class="ds-select-trigger" id="update-schema" aria-label="Select schema">
+          <span class:ds-select-placeholder={!updateSchema}>
+            {updateSchema ? (schemas.find(s => s.id === updateSchema)?.display_name ?? updateSchema) : 'Select schema…'}
+          </span>
+          <span class="ds-select-chevron">▾</span>
+        </Select.Trigger>
+        <Select.Portal>
+          <Select.Content class="ds-select-content" sideOffset={4}>
+            {#each schemas as s}
+              <Select.Item class="ds-select-item" value={s.id} label={s.display_name}>
+                {s.display_name}
+              </Select.Item>
+            {/each}
+          </Select.Content>
+        </Select.Portal>
+      </Select.Root>
     </div>
     <div class="ds-field">
       <label class="ds-label" for="update-filter">Filter (optional)</label>
       <input id="update-filter" class="ds-input" bind:value={updateFilter} placeholder="e.g. provider name…" />
     </div>
   </div>
-  <button class="ds-submit" onclick={startUpdate} disabled={submitting || !updateSchema}>
+  <button class="ds-submit" onclick={startUpdate} disabled={submitting || !updateSchema || updateSchema === ''}>
     {submitting ? 'Starting…' : '↻ Run update'}
   </button>
 </div>
@@ -78,15 +91,42 @@
     font-family: 'DM Sans', sans-serif;
   }
 
-  .ds-input, .ds-select {
+  .ds-input {
     all: unset;
     background: #f9f8f5; border: 1px solid #dddbd5; border-radius: 7px;
     padding: 0.45rem 0.75rem; font-size: 0.85rem; color: #0e0d0b;
     font-family: 'DM Sans', sans-serif; width: 100%; box-sizing: border-box;
     transition: border-color 0.12s;
   }
-  .ds-input:focus, .ds-select:focus { border-color: #22d3ee; outline: none; }
+  .ds-input:focus { border-color: #22d3ee; outline: none; }
   .ds-input::placeholder { color: #b8b6b0; }
+
+  /* bits-ui Select — same styles as DatasetCreatePanel */
+  :global(.ds-select-trigger) {
+    all: unset;
+    display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;
+    background: #f9f8f5; border: 1px solid #dddbd5; border-radius: 7px;
+    padding: 0.45rem 0.75rem; font-size: 0.85rem; color: #0e0d0b;
+    font-family: 'DM Sans', sans-serif; width: 100%; box-sizing: border-box;
+    cursor: pointer; transition: border-color 0.12s;
+  }
+  :global(.ds-select-trigger:hover) { border-color: #b8b6b0; }
+  :global(.ds-select-trigger:focus-visible) { border-color: #22d3ee; outline: none; }
+  .ds-select-placeholder { color: #b8b6b0; }
+  .ds-select-chevron { font-size: 0.7rem; color: #9b9892; flex-shrink: 0; }
+  :global(.ds-select-content) {
+    background: #fff; border: 1px solid #dddbd5; border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10); padding: 0.25rem 0;
+    min-width: var(--bits-select-anchor-width);
+    z-index: 150; font-family: 'DM Sans', sans-serif;
+  }
+  :global(.ds-select-item) {
+    all: unset; display: block; width: 100%; box-sizing: border-box;
+    padding: 0.45rem 0.85rem; font-size: 0.85rem; color: #0e0d0b;
+    cursor: pointer; transition: background 0.1s;
+  }
+  :global(.ds-select-item[data-highlighted]) { background: #f5f3ee; }
+  :global(.ds-select-item[data-selected]) { color: #0e7490; font-weight: 600; }
 
   .ds-submit {
     all: unset; cursor: pointer;

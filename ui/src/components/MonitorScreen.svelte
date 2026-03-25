@@ -31,9 +31,7 @@
     await jobsStore.refresh();
   }
 
-  function jobLabel(j: typeof recentJobs[0]) {
-    return getJobLabel(j);
-  }
+
 </script>
 
 <!-- Job selector bar -->
@@ -50,10 +48,10 @@
             class:selected={j.id === jobsStore.selectedJobId}
             class:running={j.status === 'running'}
             onclick={() => dashStore.openJob(j.id)}
-            title={jobLabel(j)}
+            title={getJobLabel(j)}
           >
             <span class="job-chip-dot" class:running={j.status === 'running'} class:done={j.status === 'done'} class:failed={j.status === 'failed'}></span>
-            <span class="job-chip-label">{jobLabel(j)}</span>
+            <span class="job-chip-label">{getJobLabel(j)}</span>
             <span class="job-chip-age">{timeAgo(j.startedAt)}</span>
           </button>
           {#if j.status === 'running'}

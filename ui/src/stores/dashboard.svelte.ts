@@ -83,7 +83,6 @@ class DashboardStore {
       // Track how many events we've already processed so we can skip
       // replayed events on reconnect (EventSource auto-reconnects and the
       // server always replays all stored events from the beginning).
-      let processedCount = events.length;
       let skipRemaining = events.length;
 
       es.onmessage = (e) => {
@@ -108,7 +107,6 @@ class DashboardStore {
           return;
         }
         this.processEvent(type, payload as Record<string, unknown>, ts);
-        processedCount++;
       };
       // Close on error rather than letting EventSource auto-reconnect,
       // which would replay all events and cause duplicates.

@@ -107,16 +107,16 @@ export async function getRecords(file: string): Promise<RecordsResponse> {
   return apiFetch(`/outputs/${file}/records?limit=200`);
 }
 
-export async function mergeRows(file: string, keepId: number, removeIds: number[]): Promise<Response> {
-  return fetch(`/outputs/${file}/merge-rows`, {
+export async function mergeRows(file: string, keepId: number, removeIds: number[]): Promise<void> {
+  await apiFetch(`/outputs/${file}/merge-rows`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ keepId, removeIds }),
   });
 }
 
-export async function markNotDuplicate(file: string, ids: number[]): Promise<Response> {
-  return fetch(`/outputs/${file}/not-duplicate`, {
+export async function markNotDuplicate(file: string, ids: number[]): Promise<void> {
+  await apiFetch(`/outputs/${file}/not-duplicate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ids }),

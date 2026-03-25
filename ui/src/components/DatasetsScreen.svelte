@@ -6,6 +6,7 @@
   import DatasetsSidebar from './DatasetsSidebar.svelte';
   import DatasetCreatePanel from './DatasetCreatePanel.svelte';
   import DatasetUpdatePanel from './DatasetUpdatePanel.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
 
   const {
     outputs: initialOutputs,
@@ -33,6 +34,8 @@
   });
 
   let activePanel = $state<'update' | 'create' | null>(null);
+  let confirmOpen = $state(false);
+  let confirmState = $state<{ title: string; description: string; onok: () => void } | null>(null);
   // schemaId for RecordsTab — auto-selected based on the dataset's creation schema
   let schemaId = $state('');
 
@@ -63,22 +66,34 @@
     recordsTick++;
   }
 
-  async function handleDelete(name: string) {
-    if (!confirm(`Delete dataset "${name}"?`)) return;
-    await deleteOutput(name);
-    if (selectedDataset === name) { selectedDataset = null; activePanel = null; }
-    await refreshDatasets();
+  function handleDelete(name: string) {
+    confirmState = {
+      title: `Delete "${name}"?`,
+      description: 'All records in this dataset will be permanently removed.',
+      onok: async () => {
+        await deleteOutput(name);
+        if (selectedDataset === name) { selectedDataset = null; activePanel = null; }
+        await refreshDatasets();
+      },
+    };
+    confirmOpen = true;
   }
 
-  async function handleDeleteSchema(id: string) {
-    if (!confirm(`Delete schema "${id}"? This cannot be undone.`)) return;
-    try {
-      await deleteSchema(id);
-    } catch (e) {
-      alert(e instanceof Error ? e.message : String(e));
-      return;
-    }
-    onSelectsReload();
+  function handleDeleteSchema(id: string) {
+    confirmState = {
+      title: `Delete schema "${id}"?`,
+      description: 'This cannot be undone.',
+      onok: async () => {
+        try {
+          await deleteSchema(id);
+        } catch (e) {
+          alert(e instanceof Error ? e.message : String(e));
+          return;
+        }
+        onSelectsReload();
+      },
+    };
+    confirmOpen = true;
   }
 
   async function handleCreateSubmit(params: { output: string }) {
@@ -173,6 +188,15 @@
 
   </div>
 </div>
+
+<ConfirmDialog
+  bind:open={confirmOpen}
+  title={confirmState?.title ?? ''}
+  description={confirmState?.description ?? ''}
+  confirmLabel="Delete"
+  danger
+  onconfirm={() => confirmState?.onok()}
+/>
 
 <style>
   /* Root */

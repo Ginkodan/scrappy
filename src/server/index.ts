@@ -224,11 +224,16 @@ app.get("/jobs/:id/stream", async (req, reply) => {
   return reply;
 });
 
+function validDataset(dataset: string, reply: FastifyReply): string | null {
+  if (dataset.includes("..")) { reply.code(400).send({ error: "invalid" }); return null; }
+  return dataset.replace(/\.csv$/i, "");
+}
+
 // --- export dataset as CSV download ---
 app.get("/outputs/:dataset", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
-  const name = dataset.replace(/\.csv$/i, "");
+  const name = validDataset(dataset, reply);
+  if (!name) return;
   const jobRow = db.prepare(
     "SELECT params FROM jobs WHERE json_extract(params, '$.output') = ? OR json_extract(params, '$.input') = ? ORDER BY started_at DESC LIMIT 1"
   ).get(name, name) as { params: string } | undefined;
@@ -245,8 +250,8 @@ app.get("/outputs/:dataset", async (req, reply) => {
 // --- delete dataset ---
 app.delete("/outputs/:dataset", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
-  const name = dataset.replace(/\.csv$/i, "");
+  const name = validDataset(dataset, reply);
+  if (!name) return;
   deleteDataset(name, db);
   return { ok: true };
 });
@@ -254,15 +259,15 @@ app.delete("/outputs/:dataset", async (req, reply) => {
 // --- dedupe dataset ---
 app.post("/outputs/:dataset/dedupe", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
-  const name = dataset.replace(/\.csv$/i, "");
+  const name = validDataset(dataset, reply);
+  if (!name) return;
   return deduplicateDataset(name, db);
 });
 
 // --- mark rows as not duplicates ---
 app.post("/outputs/:dataset/not-duplicate", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
+  if (!validDataset(dataset, reply)) return;
   const { ids } = req.body as { ids: number[] };
   if (!Array.isArray(ids) || ids.length < 2) {
     return reply.code(400).send({ error: "ids array with at least 2 elements required" });
@@ -274,8 +279,8 @@ app.post("/outputs/:dataset/not-duplicate", async (req, reply) => {
 // --- merge rows by DB id ---
 app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
-  const name = dataset.replace(/\.csv$/i, "");
+  const name = validDataset(dataset, reply);
+  if (!name) return;
   const { keepId, removeIds } = req.body as { keepId: number; removeIds: number[] };
   if (typeof keepId !== "number" || !Array.isArray(removeIds)) {
     return reply.code(400).send({ error: "keepId (number) and removeIds (array) required" });
@@ -288,7 +293,7 @@ app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
 // --- delete individual records by id ---
 app.delete("/outputs/:dataset/records", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
+  if (!validDataset(dataset, reply)) return;
   const { ids } = req.body as { ids: number[] };
   if (!Array.isArray(ids) || ids.length === 0) return reply.code(400).send({ error: "ids required" });
   deleteRecordsByIds(ids, db);
@@ -298,8 +303,8 @@ app.delete("/outputs/:dataset/records", async (req, reply) => {
 // --- records as JSON (paginated, filterable) ---
 app.get("/outputs/:dataset/records", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
-  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
-  const name = dataset.replace(/\.csv$/i, "");
+  const name = validDataset(dataset, reply);
+  if (!name) return;
   const q = req.query as Record<string, string>;
 
   const filter: Record<string, string> = {};
@@ -308,17 +313,20 @@ app.get("/outputs/:dataset/records", async (req, reply) => {
     if (m) filter[m[1]] = v;
   }
 
+  const limit = q.limit ? parseInt(q.limit, 10) : 200;
+  const offset = q.offset ? parseInt(q.offset, 10) : 0;
+
   const { rows, total } = readRecordsPaginated(name, db, {
-    limit: q.limit ? parseInt(q.limit, 10) : undefined,
-    offset: q.offset ? parseInt(q.offset, 10) : undefined,
+    limit,
+    offset,
     sort: q.sort,
     order: q.order === "desc" ? "desc" : "asc",
     filter,
   });
 
-  if (total === 0) return { headers: [], rows: [], total: 0, limit: 200, offset: 0 };
+  if (total === 0) return { headers: [], rows: [], total: 0, limit, offset };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
-  return { headers, rows, total, limit: q.limit ? parseInt(q.limit, 10) : 200, offset: q.offset ? parseInt(q.offset, 10) : 0 };
+  return { headers, rows, total, limit, offset };
 });
 
 // --- chat ---
