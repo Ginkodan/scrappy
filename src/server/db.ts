@@ -59,6 +59,20 @@ db.exec(`
 // Add entity_field column to schemas if not present (idempotent migration)
 try { db.exec(`ALTER TABLE schemas ADD COLUMN entity_field TEXT`); } catch { /* already exists */ }
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS qa_issues (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    dataset     TEXT NOT NULL,
+    ran_at      TEXT NOT NULL,
+    type        TEXT NOT NULL,
+    record_ids  TEXT NOT NULL,
+    field       TEXT,
+    payload     TEXT NOT NULL,
+    status      TEXT NOT NULL DEFAULT 'open'
+  );
+  CREATE INDEX IF NOT EXISTS idx_qa_issues_dataset ON qa_issues(dataset);
+`);
+
 // Mark any jobs that were running when the server last stopped as cancelled
 db.prepare(
   `UPDATE jobs SET status='cancelled', finished_at=?, result='Server restarted' WHERE status='running'`

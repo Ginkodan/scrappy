@@ -173,6 +173,56 @@ export async function deleteEntity(key: string): Promise<void> {
   await apiFetch(`/entities/${encodeURIComponent(key)}`, { method: 'DELETE' });
 }
 
+// ─── QA ──────────────────────────────────────────────────────────────────────
+
+export interface QaStoredIssue {
+  id: number;
+  dataset: string;
+  ran_at: string;
+  type: 'fuzzy_dupe' | 'normalization' | 'outlier';
+  record_ids: number[];
+  field: string | null;
+  payload: {
+    type: string;
+    reason: string;
+    // fuzzy_dupe
+    ids?: number[];
+    confidence?: number;
+    // normalization
+    id?: number;
+    field?: string;
+    current?: string;
+    suggested?: string;
+    // outlier
+    value?: string;
+  };
+  status: string;
+}
+
+export async function runQa(dataset: string): Promise<{ ran_at: string; count: number; issues: QaStoredIssue[] }> {
+  return apiFetch(`/outputs/${encodeURIComponent(dataset)}/qa`, { method: 'POST' });
+}
+
+export async function getQaIssues(dataset: string, status = 'open'): Promise<{ issues: QaStoredIssue[] }> {
+  return apiFetch(`/outputs/${encodeURIComponent(dataset)}/qa?status=${status}`);
+}
+
+export async function patchRecordField(dataset: string, recordId: number, field: string, value: string): Promise<void> {
+  await apiFetch(`/outputs/${encodeURIComponent(dataset)}/records/${recordId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ field, value }),
+  });
+}
+
+export async function updateQaIssue(dataset: string, issueId: number, status: string): Promise<void> {
+  await apiFetch(`/outputs/${encodeURIComponent(dataset)}/qa/${issueId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
+  });
+}
+
 export async function generateSchema(description: string): Promise<{
   reply: string;
   schema: {

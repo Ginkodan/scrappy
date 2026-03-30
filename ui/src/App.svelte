@@ -1,60 +1,76 @@
 <script lang="ts">
-  import Header from './components/Header.svelte';
-  import MonitorScreen from './components/MonitorScreen.svelte';
-  import DatasetsScreen from './components/DatasetsScreen.svelte';
-  import EntitiesScreen from './components/EntitiesScreen.svelte';
+  import NavRail from './components/NavRail.svelte';
+  import TopBar from './components/TopBar.svelte';
+  import DiscoveryScreen from './components/DiscoveryScreen.svelte';
+  import SourcesScreen from './components/SourcesScreen.svelte';
+  import HistoryScreen from './components/HistoryScreen.svelte';
+  import SchemasScreen from './components/SchemasScreen.svelte';
+  import ExtractionsScreen from './components/ExtractionsScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
   import { jobsStore } from './stores/jobs.svelte';
   import { dashStore } from './stores/dashboard.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
+  import type { Schema } from './lib/types';
 
-  type Screen = 'monitor' | 'datasets' | 'entities';
-
-  function parseHash(): { screen: Screen; entityKey?: string } {
-    const raw = window.location.hash.slice(1);
-    const [path, query] = raw.split('?');
-    const params = new URLSearchParams(query ?? '');
-    if (path === 'datasets') return { screen: 'datasets' };
-    if (path === 'entities') return { screen: 'entities', entityKey: params.get('e') ?? undefined };
-    return { screen: 'monitor' };
+  // Initialize theme before first render
+  const savedTheme = localStorage.getItem('scrappy-theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') {
+    document.documentElement.dataset.theme = savedTheme;
   }
 
-  function navigate(s: Screen, entityKey?: string) {
+  type Screen = 'discovery' | 'monitor' | 'schemas' | 'sources' | 'history' | 'extractions';
+
+  function parseHash(): Screen {
+    const raw = window.location.hash.slice(1).split('?')[0];
+    if (raw === 'history')     return 'history';
+    if (raw === 'schemas')     return 'schemas';
+    if (raw === 'sources')     return 'sources';
+    if (raw === 'extractions') return 'extractions';
+    if (raw === 'monitor')     return 'history'; // legacy redirect
+    return 'discovery';
+  }
+
+  function navigate(s: Screen) {
     screen = s;
-    if (s === 'entities' && entityKey) {
-      window.location.hash = `entities?e=${encodeURIComponent(entityKey)}`;
-      initialEntityKey = entityKey;
-    } else {
-      window.location.hash = s;
-    }
+    window.location.hash = s;
   }
 
-  const parsed = parseHash();
-  let screen = $state<Screen>(parsed.screen);
-  let initialEntityKey = $state<string | undefined>(parsed.entityKey);
+  function openExtraction(output: string) {
+    selectedOutput = output;
+    navigate('extractions');
+  }
+
+  let screen = $state<Screen>(parseHash());
+  let selectedOutput = $state<string | null>(null);
+
+  // Nav collapse state
+  let navCollapsed = $state(localStorage.getItem('scrappy-nav') === 'collapsed');
+  const navWidth = $derived(navCollapsed ? 56 : 256);
+
+  function toggleNav() {
+    navCollapsed = !navCollapsed;
+    localStorage.setItem('scrappy-nav', navCollapsed ? 'collapsed' : 'expanded');
+  }
 
   $effect(() => {
-    function onHashChange() {
-      const p = parseHash();
-      screen = p.screen;
-      if (p.entityKey) initialEntityKey = p.entityKey;
-    }
+    function onHashChange() { screen = parseHash(); }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   });
 
   $effect(() => {
     if (dashStore.navTarget) {
-      navigate('datasets');
+      navigate('history');
       dashStore.navTarget = null;
     }
   });
+
   let settingsOpen = $state(false);
   let schemaModalOpen = $state(false);
   let editingSchemaId = $state<string | null>(null);
 
-  let schemas = $state<Array<{ id: string; display_name: string }>>([]);
+  let schemas = $state<Schema[]>([]);
   let outputs = $state<string[]>([]);
 
   async function loadSelects() {
@@ -64,45 +80,58 @@
   }
 
   $effect(() => {
-    getSettings(); // loads api key into module-level store
+    getSettings();
     loadSelects();
     jobsStore.refresh();
 
     const interval = setInterval(() => {
       jobsStore.refresh();
-      getOutputs().then(({ outputs: o }) => {
-        if (o.length) outputs = o;
-      });
+      getOutputs().then(({ outputs: o }) => { if (o.length) outputs = o; });
     }, 3000);
 
     return () => clearInterval(interval);
   });
 </script>
 
-<Header
+<TopBar
   {screen}
-  onScreenChange={(s) => { navigate(s); }}
+  {navCollapsed}
   onOpenSettings={() => { settingsOpen = true; }}
 />
 
-<main class="app-content">
-  {#if screen === 'monitor'}
-    <div class="monitor-scroll">
-      <MonitorScreen />
+<div class="app-shell" style="--nav-w: {navWidth}px">
+  <NavRail
+    {screen}
+    {navCollapsed}
+    onNavigate={navigate}
+    onToggleNav={toggleNav}
+    onOpenSettings={() => { settingsOpen = true; }}
+  />
+
+  <div class="app-main">
+    <div class="app-content">
+      {#if screen === 'discovery'}
+        <DiscoveryScreen onNavigate={navigate} />
+      {:else if screen === 'history'}
+        <HistoryScreen onOpenExtraction={openExtraction} />
+      {:else if screen === 'extractions'}
+        <ExtractionsScreen
+          {outputs}
+          {selectedOutput}
+          onSelectOutput={(o) => { selectedOutput = o; }}
+          onDeleted={(o) => { outputs = outputs.filter(x => x !== o); if (selectedOutput === o) selectedOutput = null; }}
+        />
+      {:else if screen === 'schemas'}
+        <SchemasScreen
+          onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
+          onSelectsReload={loadSelects}
+        />
+      {:else if screen === 'sources'}
+        <SourcesScreen />
+      {/if}
     </div>
-  {:else if screen === 'datasets'}
-    <DatasetsScreen
-      {outputs}
-      {schemas}
-      onSchemaEdit={(id) => { editingSchemaId = id; schemaModalOpen = true; }}
-      onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
-      onSelectsReload={loadSelects}
-      onNavigateEntity={(key) => navigate('entities', key)}
-    />
-  {:else if screen === 'entities'}
-    <EntitiesScreen initialKey={initialEntityKey} />
-  {/if}
-</main>
+  </div>
+</div>
 
 <SettingsModal open={settingsOpen} onClose={() => { settingsOpen = false; }} />
 <SchemaModal

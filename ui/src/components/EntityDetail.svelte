@@ -328,6 +328,7 @@
   /* Datasets */
   .en-datasets {
     flex: 1;
+    min-height: 0;
     overflow-y: auto;
     padding: 0.75rem 1.5rem 1.5rem;
     display: flex;

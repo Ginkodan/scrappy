@@ -9,6 +9,7 @@ import { listSchemas, listOutputs, runIndexJob, runUpdateJob, getLLMClient } fro
 import { readSettings, writeSettings } from "./settings.js";
 import { db } from "./db.js";
 import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate, deleteRecordsByIds } from "../tools/records.js";
+import { runQaAgent, type QaIssue } from "../agent/qa.js";
 import { dbGetSchemaRow, dbGetSchema, dbInsertSchema, dbUpdateSchema, dbDeleteSchema, type SchemaInput } from "./schema-store.js";
 import { seedSchemasFromFiles } from "./seed-schemas.js";
 import { normalizeEntityName } from "../lib/normalize.js";
@@ -291,6 +292,21 @@ app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
   return { ok: true, kept };
 });
 
+// --- patch a single field on a record ---
+app.patch("/outputs/:dataset/records/:id", async (req, reply) => {
+  const { dataset, id } = req.params as { dataset: string; id: string };
+  const name = validDataset(dataset, reply);
+  if (!name) return;
+  const { field, value } = req.body as { field?: string; value?: string };
+  if (!field || value === undefined) return reply.code(400).send({ error: "field and value required" });
+  const row = db.prepare("SELECT data FROM records WHERE id = ? AND dataset = ?").get(Number(id), name) as { data: string } | undefined;
+  if (!row) return reply.code(404).send({ error: "record not found" });
+  const data = JSON.parse(row.data) as Record<string, unknown>;
+  data[field] = value;
+  db.prepare("UPDATE records SET data = ? WHERE id = ?").run(JSON.stringify(data), Number(id));
+  return { ok: true };
+});
+
 // --- delete individual records by id ---
 app.delete("/outputs/:dataset/records", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
@@ -328,6 +344,99 @@ app.get("/outputs/:dataset/records", async (req, reply) => {
   if (total === 0) return { headers: [], rows: [], total: 0, limit, offset };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
   return { headers, rows, total, limit, offset };
+});
+
+// --- QA ---
+
+interface DbQaIssue {
+  id: number;
+  dataset: string;
+  ran_at: string;
+  type: string;
+  record_ids: string;
+  field: string | null;
+  payload: string;
+  status: string;
+}
+
+function dbQaIssueToJson(row: DbQaIssue) {
+  return {
+    id: row.id,
+    dataset: row.dataset,
+    ran_at: row.ran_at,
+    type: row.type,
+    record_ids: JSON.parse(row.record_ids) as number[],
+    field: row.field,
+    payload: JSON.parse(row.payload) as QaIssue,
+    status: row.status,
+  };
+}
+
+// Run QA agent on a dataset — synchronous, returns issues immediately
+app.post("/outputs/:dataset/qa", async (req, reply) => {
+  const { dataset } = req.params as { dataset: string };
+  const name = validDataset(dataset, reply);
+  if (!name) return;
+
+  // Resolve schema from the most recent index job for this dataset
+  const jobRow = db.prepare(
+    "SELECT params FROM jobs WHERE type='index' AND json_extract(params, '$.output') = ? ORDER BY started_at DESC LIMIT 1"
+  ).get(name) as { params: string } | undefined;
+  if (!jobRow) return reply.code(404).send({ error: "No index job found for this dataset" });
+
+  const params = JSON.parse(jobRow.params) as Record<string, string>;
+  const schemaDef = dbGetSchema(db, params.schema);
+  if (!schemaDef) return reply.code(404).send({ error: `Schema "${params.schema}" not found` });
+
+  const records = readRecords(name, db);
+  if (records.length === 0) return reply.code(400).send({ error: "Dataset is empty" });
+
+  const llmClient = getLLMClient();
+  const ranAt = new Date().toISOString();
+  const issues = await runQaAgent(records, schemaDef, llmClient);
+
+  // Clear previous open issues for this dataset and insert fresh ones
+  db.prepare("DELETE FROM qa_issues WHERE dataset = ? AND status = 'open'").run(name);
+
+  const insert = db.prepare(
+    "INSERT INTO qa_issues (dataset, ran_at, type, record_ids, field, payload, status) VALUES (?, ?, ?, ?, ?, ?, 'open')"
+  );
+  db.transaction((rows: QaIssue[]) => {
+    for (const issue of rows) {
+      const recordIds = issue.type === "fuzzy_dupe" ? issue.ids : [issue.id];
+      const field = issue.type !== "fuzzy_dupe" ? issue.field : null;
+      insert.run(name, ranAt, issue.type, JSON.stringify(recordIds), field, JSON.stringify(issue));
+    }
+  })(issues);
+
+  const stored = (db.prepare("SELECT * FROM qa_issues WHERE dataset = ? AND ran_at = ? ORDER BY id").all(name, ranAt) as DbQaIssue[])
+    .map(dbQaIssueToJson);
+
+  return { ran_at: ranAt, count: issues.length, issues: stored };
+});
+
+// Get stored QA issues for a dataset
+app.get("/outputs/:dataset/qa", async (req, reply) => {
+  const { dataset } = req.params as { dataset: string };
+  const name = validDataset(dataset, reply);
+  if (!name) return;
+  const q = req.query as { status?: string };
+  const status = q.status ?? "open";
+  const rows = (db.prepare("SELECT * FROM qa_issues WHERE dataset = ? AND status = ? ORDER BY id").all(name, status) as DbQaIssue[])
+    .map(dbQaIssueToJson);
+  return { issues: rows };
+});
+
+// Update issue status (dismiss or mark applied)
+app.patch("/outputs/:dataset/qa/:id", async (req, reply) => {
+  const { id } = req.params as { dataset: string; id: string };
+  const { status } = req.body as { status: string };
+  if (!["open", "dismissed", "applied"].includes(status)) {
+    return reply.code(400).send({ error: "status must be open, dismissed, or applied" });
+  }
+  const result = db.prepare("UPDATE qa_issues SET status = ? WHERE id = ?").run(status, Number(id));
+  if (result.changes === 0) return reply.code(404).send({ error: "issue not found" });
+  return { ok: true };
 });
 
 // --- entities ---
