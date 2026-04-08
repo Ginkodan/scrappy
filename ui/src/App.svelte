@@ -20,9 +20,7 @@
 
   // Initialize theme before first render
   const savedTheme = localStorage.getItem('scrappy-theme');
-  if (savedTheme === 'light' || savedTheme === 'dark') {
-    document.documentElement.dataset.theme = savedTheme;
-  }
+  document.documentElement.dataset.theme = (savedTheme === 'light' || savedTheme === 'dark') ? savedTheme : 'light';
 
   type Screen = 'discovery' | 'monitor' | 'schemas' | 'sources' | 'history' | 'extractions';
 
